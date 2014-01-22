@@ -4,12 +4,16 @@ var Buffer = function (size) {
 };
 
 Buffer.prototype.enq = function (v) {
-    if (this.full()) throw new Error ("buffer full");
+    if (this.full()) {
+      throw new Error ("buffer full");
+    }
     this.data.push (v);
 };
 
 Buffer.prototype.deq = function () {
-    if (this.empty()) throw new Error ('buffer empty');
+    if (this.empty()) {
+      throw new Error ('buffer empty');
+    }
     return this.data.shift();
 };
 
@@ -60,10 +64,10 @@ var BufferedChannel = function (buffer) {
 
 /**
  * Buffered Channel
- * 
+ *
  * ### Invariant
- * 
- * the total number of calls of recv minus the tocal calls of send is 
+ *
+ * the total number of calls of recv minus the tocal calls of send is
  * equal to the length of receivers plus buffer minus senders.
  * TODO: write better about this invariant
  */
@@ -71,13 +75,13 @@ BufferedChannel.prototype = new Channel();
 
 /**
  * Buffered send
- * + if buffer is full 
- * 1. suspend the current routine 
+ * + if buffer is full
+ * 1. suspend the current routine
  *
  * + if buffer is not full
  * 1. enqueue the yielded value
  * 2. continue with current routine
- * 3. try to resume one receiver 
+ * 3. try to resume one receiver
  *
  * Why only one?
  * of course, because of the invariant.
@@ -89,7 +93,7 @@ BufferedChannel.prototype.send = function (v, cont) {
 	this.senders.push (function () { ch.send (v, cont); });
     }
     else {
-	this.buffer.enq (v)
+	this.buffer.enq (v);
 	cont();
     }
     if (this.receivers.length > 0 && ! this.buffer.empty()) {
@@ -114,7 +118,7 @@ var AltChannel = function (left, right) {
 };
 
 var chan = function (size) {
-    return (typeof size === 'number') && size > 0 
+    return (typeof size === 'number') && size > 0
 	? new BufferedChannel (new Buffer(size))
 	: new SyncChannel ();
 };
