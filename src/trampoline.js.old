@@ -1,0 +1,47 @@
+var Cont = function (fun, args, context) {
+    this.fun = fun;
+    this.context = context || null;
+    this.args = args || [];
+};
+
+Cont.prototype.call = function () {
+    return this.fun.apply(this.context, this.args);
+};
+
+var running = false;
+
+var with_running = function (fn) {
+    running = true;
+    var res = fn ();
+    running = false;
+    return res;
+};
+
+var tr = function (fun) {
+    return function () { 
+	var cont = new Cont (fun, arguments, this);
+	return running ? cont : runTR(cont);
+    };
+};
+
+var runTR = function (cont) {
+    return with_running (function () {
+	while (cont instanceof Cont) cont = cont.call();
+	return cont;
+    });
+};
+
+// module.exports = {
+//     Cont: Cont,
+//     ret: ret,
+//     runTR: runTR
+// };
+
+module.exports = tr;
+
+var recfun = tr
+ (function (x) {
+  return x === 0 ? 0 : recfun(x - 1);
+});
+
+console.log(recfun(100000000));

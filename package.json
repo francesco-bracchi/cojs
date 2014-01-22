@@ -1,0 +1,27 @@
+{
+  "name": "gojs",
+  "version": "0.0.0",
+  "description": "goroutines for javascript",
+  "main": " ",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@bitbucket.org/francesco_bracchi/gojs.git"
+  },
+  "keywords": [
+    "macros",
+    "macro",
+    "go", 
+    "goroutine",
+    "coroutine",
+    "sweetjs",
+    "sweet-macros"
+  ],
+  "author": "francesco bracchi <frbracch@gmail.com>",
+  "license": "ISC",
+  "devDependencies": {
+    "sweet.js": "~0.4.0"
+  }
+}

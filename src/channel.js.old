@@ -1,0 +1,90 @@
+
+var Channel = function (size) {
+    this.size = size;
+    this.buffer = [];
+    this.cont = { recv: [], send: [] }
+}
+
+// queue buffer basic ops
+
+Channel.prototype.enq = function (v) {
+    return this.buffer.push (v);
+};
+
+Channel.prototype.deq = function () {
+    return this.buffer.shift ();
+};
+
+Channel.prototype.length = function () {
+    return this.buffer.length;
+};
+
+// predicates
+Channel.prototype.empty = function () {
+    return this.buffer.length <= 0;
+};
+
+Channel.prototype.full = function () {
+    return this.size && this.buffer.length >= this.size;
+};
+
+Channel.prototype.immediate = function () {
+    return (this.size <= 0) && (this.cont.recv.length > 0);
+};
+
+Channel.prototype.suspend = function (t, cont) {
+    return this.cont[t].push(cont);
+};
+
+Channel.prototype.resume = function (t) {
+    var conts = this.cont[t].slice(0);
+    this.cont[t] = [];
+    while (conts.length > 0) {
+	var cont = conts.shift();
+	cont && cont();
+    }
+};
+
+Channel.prototype.recv = function (cont) {
+    var ch = this;
+    if (ch.empty()) {
+	// console.log ('empty channel');
+	this.suspend('recv', function () { ch.recv(cont); });
+	ch.resume('send');
+    } else {
+	// console.log ('available channel');
+	cont (this.buffer.shift());
+	ch.resume('send');
+    }
+};
+
+Channel.prototype.send = function (v, cont) {
+    var ch = this;
+    if (this.immediate()) {
+	// console.log ('immediate resume!');
+	this.buffer.push (v);
+	this.suspend('send', cont);
+	this.resume('recv');
+    } else if (this.full()) {
+	// console.log ('full!');
+	this.suspend('send', function () { return ch.send(v, cont); });
+	this.resume('recv');
+    } else {
+	// console.log ('not full!');
+	this.buffer.push(v);
+	cont && cont();
+	this.resume('recv');
+    }
+};
+
+var UNBOUND = ['unbound'];
+
+var chan = function (s) {
+    if (s === UNBOUND) return new Channel();
+    if (typeof s === 'number') return new Channel (s);
+    return new Channel (0);
+};
+
+chan.UNBOUND = UNBOUND;
+
+exports = chan;
