@@ -1,79 +1,78 @@
-(function () {
+var future = require ('./future');
 
-    var Jumper = function (cont) {
-	this.cont = cont;
-    };
+var Monad = function (action) {
+    this.action = action;
+};
 
-    var jump = function (cont) {
-	return new Jumper (cont);
-    };
+var monad = function (fn) {
+    return new Monad (fn);
+};
 
-    var trampoline = function (cont) {
-	while (cont instanceof Jumper) {
-	    cont = cont.cont();
-	}
-	return cont;
-    };
+var identity = function (x) { 
+    return future (function () { 
+	return x;
+    }); 
+};
 
-    var identity = function (x) { return x; };
+var throw_ex = function (e) { throw e; };
 
-    var go_run = function (monad, cnt) {
-	if (! cnt) {
-	    cnt = identity;
-	}
-	return trampoline(monad(cnt));
-    };
+Monad.prototype.start = function () {
+    var cont = arguments[0] || identity;
+    var fail = arguments[1] || throw_ex;
+    return this.action (cont, fail).resume();
+};
 
-    // monad operations
-    // bind
-    var go_bind = function (m, fn) {
-	return function (cont) {
-	    return jump(function () {
-		return m (function (v) {
-		    return jump (function () {
-			var n = fn (v);
-			n (cont);
-		    });
+var ret = function (v) {
+    return monad (function (cont, fail) {
+	return future (function () {
+	    return cont (v);
+	});
+    });
+};
+
+var fail = function (e) {
+    return monad (function (cont, fail) {
+	return future (function () {
+	    return fail (e);
+	});
+    });
+};
+
+var bind = function (m, next) {
+    return monad (function (cont, fail) {
+	return future(function () {
+	    return m.action (function (v) {
+		return future (function () {
+		    return next(v).action (cont, fail);
+		});
+	    }, fail);
+	});
+    });
+};
+
+var alt = function (m, n) {
+    return monad (function (cont, fail) {
+	return future (function () {
+	    return m.action (cont, function (ex) {
+		return future (function () {
+		    return n.action (cont, fail);
 		});
 	    });
-	};
-    };
+	});
+    });
+};
 
-    // return
-    var go_return = function (val) {
-	return function (cont) {
-	    return jump (function () {
-		return cont (val);
-	    });
-	};
-    };
+Monad.prototype.bind = function (fun) {
+    return bind (this, fun);
+};
 
-    // basic operations
-    var go_take = function (ch) {
-	return function (cont) {
-	    return ch.take (function (v) {
-		trampoline(cont (v));
-	    });
-	};
-    };
 
-    var go_put = function (v, ch) {
-	return function (cont) {
-	    return ch.put (v, function () {
-		trampoline(cont (v));
-	    });
-	};
-    };
+Monad.prototype.alt = function (n) {
+    return alt (this, n);
+};
 
-    var global = (function () { return this; }).call(null);
-    
-    global.go = {
-	jump: jump,
-	trampoline: trampoline,
-	identity: identity,
-	run: go_run,
-	bind: go_bind,
-	take: go_take,
-	put: go_put
-    }
-}());
+monad.ret = ret;
+
+monad.fail = fail;
+
+module.exports = monad;

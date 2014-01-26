@@ -1,3 +1,6 @@
+var future = require ('./future.js'),
+    monad = require ('./monad.js');
+
 var Buffer = function (size) {
     this.size = size;
     this.data = [];
@@ -34,27 +37,64 @@ var Channel = function () {
     this.senders = [];
 };
 
-var SyncChannel = function () {
+var Simplechannel = function () {
     Channel.call (this);
 };
 
-SyncChannel.prototype = new Channel();
+Simplechannel.prototype = new Channel();
 
-SyncChannel.prototype.send = function (v, cont) {
-    if (this.receivers.length > 0) {
-	this.receivers.shift()(v);
-	cont();
-	return;
-    }
+// Simplechannel.prototype.send = function (v) {
+//     var ch = this;
+//     return monad (function (cont, fail) {
+// 	if (ch.receivers.length <= 0) {
+// 	    this.senders.push (function () { return ch.send(v); });
+// 	    return future (function () {
+// 		return 'send';
+// 	    });
+// 	} else {
+// 	    return future (function () {
+// 		return ch.receivers.shift().bind (cont);
+// 	    });
+// 	}
+//     });
+// };
+
+// Simplechannel.prototype.recv = function () {
+//     var ch = this;
+//     return monad (function (cont, fail) {
+// 	ch.receivers.push (cont);
+// 	return future (ch.senders.length > 0 
+// 	    ? ch.senders.shift()
+// 	    : function () { return 'recv'; });
+//     });
+// };
+
+Simplechannel.prototype.send = function (message) {
     var ch = this;
-    this.senders.push (function () { ch.send (v, cont); });
+    return monad (function (cont, fail) {
+	if (ch.receivers.length <= 0) {
+	    ch.senders.push (cont);
+	    return future(function () { return 'send'; });
+	}
+	var k = ch.receivers.shift();
+	return future (function () {
+	    var m = k (message).resume();
+	    console.log (m);
+	    return m.action (cont, fail);
+	});
+    });
 };
 
-SyncChannel.prototype.recv = function (cont) {
-    this.receivers.push(cont);
-    if (this.senders.length > 0) {
-	this.senders.shift()();
-    }
+Simplechannel.prototype.recv = function () {
+    var ch = this;
+    return monad (function (cont, fail) {
+	ch.receivers.push (cont);
+	if (ch.senders.length > 0) {
+	    var k = ch.senders.shift();
+	    return future (function () { return k (undefined); });
+	}
+	return future (function () { return 'recv'; });
+    });
 };
 
 var BufferedChannel = function (buffer) {
@@ -120,7 +160,31 @@ var AltChannel = function (left, right) {
 var chan = function (size) {
     return (typeof size === 'number') && size > 0
 	? new BufferedChannel (new Buffer(size))
-	: new SyncChannel ();
+	: new Simplechannel ();
 };
 
+// var recv = function (ch) {
+//     return monad (function (cont, fail) {
+// 	ch.recv (function (v) {
+// 	    var fut = cont (v);
+// 	    fut.resume();
+// 	});
+// 	return future (function () {
+// 	    return 'recv';
+// 	});
+//     });
+// };
+
+// var send = function (v, ch) {
+//     return monad (function (cont, fail) {
+// 	ch.send (v,function () {
+// 	    var fut = cont (true);
+// 	    fut.resume();
+// 	});
+// 	return future (function () { return 'send'; });
+//     });
+// };
+
 module.exports = chan;
+
+
