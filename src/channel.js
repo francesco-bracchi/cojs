@@ -37,13 +37,13 @@ var Channel = function () {
     this.senders = [];
 };
 
-var Simplechannel = function () {
+var UnbufferedChannel = function () {
     Channel.call (this);
 };
 
-Simplechannel.prototype = new Channel();
+UnbufferedChannel.prototype = new Channel();
 
-var recv = function (ch) {
+var unbuffered_recv = function (ch) {
   return monad (function (cont, fail) {
     ch.receivers.push (cont);
     if (ch.senders.length > 0) {
@@ -53,15 +53,23 @@ var recv = function (ch) {
   });
 };
 
-var send = function (ch, v) {
+var unbuffered_send = function (ch, v) {
   return monad (function (cont, fail) {
     ch.senders.push (function () {
-      return ch.receivers.shift()(v).seq (cont('undefined'));
+      return ch.receivers.shift()(v).then (cont('undefined'));
     });
     return ch.receivers.length > 0
       ? ch.senders.shift()()
       : future (function () { return 'send'; });
   });
+};
+
+UnbufferedChannel.prototype.send = function (v) {
+  return unbuffered_send (this, v);
+};
+
+UnbufferedChannel.prototype.recv = function () {
+  return unbuffered_recv (this);
 };
 
 var BufferedChannel = function (buffer) {
@@ -128,11 +136,12 @@ var chan = function (size) {
   var result;
   if (typeof size === 'number' && size > 0) {
     result = new BufferedChannel (new Buffer (size));
-  } else if (size instanceof Buffer) {
+  }
+  else if (size instanceof Buffer) {
     result = new BufferedChannel(size);
   }
   else {
-    result = new SimpleChannel();
+    result = new UnbufferedChannel();
   }
   return result;
 };

@@ -19,14 +19,14 @@ Future.prototype.resume = function () {
 };
 
 
-var seq = function (f, g) {
+var then = function (f, g) {
   return future(function () {
-    return f instanceof Future ? seq (f.force(), g) : g;
+    return f instanceof Future ? then (f.force(), g) : g;
   });
 };
 
-Future.prototype.seq = function (f) {
-  return seq (this, f);
+Future.prototype.then = function (f) {
+  return then (this, f);
 };
 
 module.exports = future;

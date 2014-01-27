@@ -5,7 +5,7 @@ var future = require ('./src/future.js'),
 macro goroutine {
     rule {
 	{
-	    recv $v:ident <- $ch:expr; 
+	    recv $v:ident <- $ch:expr;
 	    $gs ...
 	}
     } => {
@@ -14,7 +14,7 @@ macro goroutine {
     }
 
     rule {
-	{ 
+	{
 	    send $m:expr -> $ch:expr;
 	}
     } => {
@@ -22,7 +22,7 @@ macro goroutine {
 	( $ch ) . send ( $m )
     }
     rule {
-	{ 
+	{
 	    send $m:expr -> $ch:expr;
 	    $gs ...
 	}
@@ -31,9 +31,9 @@ macro goroutine {
     }
 
     rule {
-	{ 
-	    while ( $t ) { $b ... } 
-	    $gs ... 
+	{
+	    while ( $t ) { $b ... }
+	    $gs ...
 	}
     } => {
 	(function () {
@@ -48,21 +48,21 @@ macro goroutine {
     }
 
     rule {
-	{ 
-	    while ( $t ) $e:expr ; 
-	    $gs ... 
+	{
+	    while ( $t ) $e:expr ;
+	    $gs ...
 	}
     } => {
 	goroutine { while ( $t ) { $e:expr } $gs ... }
     }
-    
+
     rule {
 	{ throw $e:expr; }
     } => {
 	// monad (cont, fail) { return promise (fail ($e)) }
 	monad . fail ( $e )
     }
-    
+
     rule {
 	{ if ( $t ) { $l .. } else { $r ... } $gs ... }
     } => {
@@ -74,14 +74,14 @@ macro goroutine {
 	    return ( $t ) ? left . bind ( $rest ) : right . bind ( $rest );
 	}())
     }
-    
+
     rule {
 	try { $e ... } catch ($e:ident) { $f ... } finally { $f ... }
 	$gs ...
     } => {
 	goroutine { $e ... }
     }
-    
+
     rule {
     	{ $g:expr ; }
     } => {
@@ -101,7 +101,7 @@ macro goroutine {
 	    var $as ... ;
 	    return goroutine { $gs ... };
 	}());
-    } 
+    }
 
     rule {
 	{$v:ident = $e:expr ; $gs ... }
@@ -111,7 +111,7 @@ macro goroutine {
 	    return goroutine { $gs ... };
 	}());
     }
-    
+
     rule {
 	{}
     } => {
@@ -125,7 +125,7 @@ macro go {
     } => {
 	( goroutine { $e ... } ).start();
     }
-    
+
     rule {
 	while ( $t ) { $b ... }
     } => {
@@ -151,13 +151,13 @@ macro go {
 //     } => {
 // 	ret ($e);
 //     }
- 
+
 //     rule {
 // 	( var $v:ident = $e:expr, $es ... )
 //     } => {
 // 	bind ( js ( $e ) , function ( $v ) { return js ($es ... ) })
 //     }
-    
+
 //     rule {
 // 	( var $v:ident = $e:expr )
 //     } => {
@@ -184,7 +184,7 @@ var timeout = function (ms, val) {
     return ch;
 };
 
-// go { 
+// go {
 //     console.log ('0');
 //     recv v <- timeout (3400, 'haha');
 //     console.log ('then: ' + v);
@@ -202,13 +202,14 @@ var n = 0;
 // fix it.
 
 go while (true) {
-    console.log ('producer');
-    send n -> nums;
-    n++;
-}
-
-go while (true) {
     console.log ('consumer');
     recv n <- nums;
     console.log ('n: ' + n);
+}
+
+go while (true) {
+  console.log ('producer');
+  send n -> nums;
+  // recv _ <- timeout (0);
+  n++;
 }
