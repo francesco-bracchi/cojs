@@ -13,7 +13,7 @@
   "keywords": [
     "macros",
     "macro",
-    "go", 
+    "go",
     "goroutine",
     "coroutine",
     "sweetjs",
@@ -22,6 +22,9 @@
   "author": "francesco bracchi <frbracch@gmail.com>",
   "license": "ISC",
   "devDependencies": {
-    "sweet.js": "~0.4.0"
+    "sweet.js": "~0.4.0",
+    "grunt": "~0.4.2",
+    "grunt-sweet.js": "~0.1.4",
+    "grunt-contrib-uglify": "~0.3.2"
   }
 }

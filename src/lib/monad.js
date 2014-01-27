@@ -1,4 +1,4 @@
-var future = require ('./future');
+var jump = require ('./jump');
 
 var Monad = function (action) {
     this.action = action;
@@ -9,20 +9,20 @@ var monad = function (fn) {
 };
 
 var identity = function (x) {
-    return future (function () {
+    return jump (function () {
 	return x;
     });
 };
 
 var throw_ex = function (e) { throw e; };
 
-Monad.prototype.start = function (cont, fail) {
-    return this.action (cont || identity, fail || throw_ex).resume();
+Monad.prototype.run = function (cont, fail) {
+    return this.action (cont || identity, fail || throw_ex).trampoline();
 };
 
 var ret = function (v) {
     return monad (function (cont, fail) {
-	return future (function () {
+	return jump (function () {
 	    return cont (v);
 	});
     });
@@ -30,7 +30,7 @@ var ret = function (v) {
 
 var fail = function (e) {
     return monad (function (cont, fail) {
-	return future (function () {
+	return jump (function () {
 	    return fail (e);
 	});
     });
@@ -38,9 +38,9 @@ var fail = function (e) {
 
 var bind = function (m, next) {
     return monad (function (cont, fail) {
-	return future(function () {
+	return jump(function () {
 	    return m.action (function (v) {
-		return future (function () {
+		return jump (function () {
 		    return next(v).action (cont, fail);
 		});
 	    }, fail);
@@ -50,9 +50,9 @@ var bind = function (m, next) {
 
 var alt = function (m, n) {
     return monad (function (cont, fail) {
-	return future (function () {
+	return jump (function () {
 	    return m.action (cont, function (ex) {
-		return future (function () {
+		return jump (function () {
 		    return n.action (cont, fail);
 		});
 	    });

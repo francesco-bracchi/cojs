@@ -5,7 +5,7 @@
  * 3. Implement fancy buffers (dropfirst, droplast)
  * 4. Test, Test, Test
  */
-var future = require ('./future.js'),
+var jump = require ('./jump.js'),
     monad = require ('./monad.js');
 
 var Buffer = function (size) {
@@ -56,7 +56,7 @@ var unbuffered_recv = function (ch) {
     if (ch.senders.length > 0) {
       return ch.senders.shift()();
     }
-    return future(function () { return 'recv'; });
+    return jump (function () { return 'recv'; });
   });
 };
 
@@ -67,7 +67,7 @@ var unbuffered_send = function (ch, v) {
     });
     return ch.receivers.length > 0
       ? ch.senders.shift()()
-      : future (function () { return 'send'; });
+      : jump (function () { return 'send'; });
   });
 };
 

@@ -1,192 +1,148 @@
-macro go {
+var monad = require ('go/lib/monad.js'),
+    chan = require ('../src/lib/channel.js');
 
+macro goexpr {
     rule {
-	{ $e ... }
-    } => {
-	go_walk { $e ... }
-    } 
-
-    rule {
-	while ( $t ) $b:expr
-    } => {
-	go { while ( $t ) $b }
-    } 
-
-    rule {
-	do $b:expr while ( $t )
-    } => {
-	go { do $b while ( $t ) }
-    }
-
-    rule {
-	if ( $t ) $l:expr else $r:expr
-    } => {
-	go { if ( $t ) $l else $r; }
-    }
-
-    rule {
-	send $v:expr -> $ch:expr;
-    } => { 
-	go { send $v -> ch; }
-    }
-
-    rule {
-	$e
-    } => {
-	go { $e }
-    }
-}
-
-macro go_walk {
-
-    // receive message from channel(s) 
-    rule {
-	{ recv $v:ident <- $c0:expr or $c1:expr or $cs ... ; $e ... } 
-    } => {
-	go_walk { recv $v <- ( $c0 ).orelse ( $c1 ) or $cs ... ; $e ... }
-    }
-
-    rule {
-	{ recv $v:ident <- $c0:expr or $c1:expr ; $e ... } 
-    } => {
-	go_walk { recv $v <- ( $c0 ).orelse ( $c1 ); $e ... }
-    }
-
-    rule {
-	{ recv $v:ident <- $ch:expr ; $e ... }
-    } => {
-	( $ch ).recv ( function ( $v ) { go_walk { $e ... } })
-    }
-
-    // send message to a channel
-    rule {
-	{ send $v:expr -> $ch:expr ; $e ... }
-    } => {
-	( $ch ).send ( $v, function () { go_walk { $e ... } })
-    }
-    
-    // while loop 
-    rule {
-    	{ while ( $t ) { $b ... } $e ...}
-    } => {
-	// todo: make tail recursive
-	var loop = function () {
-	    if ( $t ) {
-		go_walk { $b ... loop(); }
-	    }
-	    else {
-		go_walk { $e ... }
-	    }
-	};
-	loop();
-    }
-
-    rule {
-    	{ while ( $t ) $b:expr $e ...}
-    } => {
-	go_walk { while ( $t ) { $b } $e ... }
-    }
-
-    // do .. while loop 
-    rule {
-	{ do { $b ... } while ( $t ) $e ... }
-    } => {
-	var loop = function () {
-	    go_walk { $b ... 
-		      if ( $t ) {
-			  loop ();
-		      } else {
-			  $e ... 
-		      }
-		    }
+	{
+	    recv $v:ident <- $ch:expr;
+	    $gs ...
 	}
-	loop ();
-    }
-    
-    rule {
-    	{ do $b:expr while ( $t ) $e ...}
     } => {
-	go_walk { do { $b } while ( $t ) $e ... }
-    }
-    
-    // if expression
-    rule {
-	{ if ( $t ) { $l ... } }
-    } => {
-	if ( $t ) {
-	    go_walk { $l ... } 
-	}
-    }
-    
-    rule {
-	{ if ( $t ) $l:expr }
-    } => {
-	if ( $t ) {
-	    go_walk { $l } 
-	}
-    }
-    
-    rule {
-	{ if ( $t ) { $l ... } else { $r ... } }
-    } => {
-	if ( $t ) {
-	    go_walk { $l ... } 
-	} else {
-	    go_walk { $r ... }
-	}
+	$ch . recv () . bind (function ( $v) { return goexpr { $gs ... } } )
+	// bind ( recv ( $ch ) , function ( $v ) { return goexpr { $gs ... } } )
     }
 
     rule {
-	{ if ( $t ) $l:expr else { $r ... } }
-    } => {
-	if ( $t ) {
-	    go_walk { $l } 
-	} else {
-	    go_walk { $r ... }
+	{
+	    send $m:expr -> $ch:expr;
 	}
+    } => {
+	// send ( $m , $ch )
+	( $ch ) . send ( $m )
+    }
+    rule {
+	{
+	    send $m:expr -> $ch:expr;
+	    $gs ...
+	}
+    } => {
+	( $ch ) . send ( $m ) . bind (function ( ) { return goexpr { $gs ... } } );
     }
 
     rule {
-	{ if ( $t ) { $l ... } else $r:expr }
-    } => {
-	if ( $t ) {
-	    go_walk { $l ... } 
-	} else {
-	    go_walk { $r }
+	{
+	    while ( $t:expr ) { $b ... }
+	    $gs ...
 	}
+    } => {
+	(function () {
+          var loop = function (_) {
+            var b = goexpr { $b ... };
+            if ( $t ) {
+              return b.bind(loop);
+            }
+	    return goexpr { $gs ... };
+	  };
+	  return loop();
+	}())
     }
 
     rule {
-	{ if ( $t ) $l:expr else $r:expr }
-    } => {
-	if ( $t ) {
-	    go_walk { $l } 
-	} else {
-	    go_walk { $r }
+	{
+	    while ( $t:expr ) $e:expr ;
+	    $gs ...
 	}
+    } => {
+	goexpr { while ( $t ) { $e } $gs ... }
     }
 
-    // generic sequence combination
     rule {
-	{ $e $es ... }
+	{ throw $e:expr; }
     } => {
-	$e go_walk { $es ... }
+	// monad (cont, fail) { return promise (fail ($e)) }
+	monad . fail ( $e )
     }
-    
+
     rule {
-	{ $e }
+	{ if ( $t ) { $l .. } else { $r ... } $gs ... }
     } => {
-	$e
+	(function () {
+	    var rest = function () { return goexpr { $gs ... } };
+	    return ( $t ) 
+		? ( goexpr { $l ... } ) . bind ( $rest ) 
+	        : ( goexpr { $r ... } ) . bind ( $rest );
+	}())
+    }
+
+    rule {
+	try { $e ... } catch ($e:ident) { $f ... } finally { $f ... }
+	$gs ...
+    } => {
+	goexpr { $e ... }
+    }
+
+    rule {
+    	{ $g:expr ; }
+    } => {
+	monad.ret ($g);
+    }
+
+    rule {
+	{ $g:expr ; $gs ... }
+    } => {
+	monad.ret ( $g ) .bind ( function () { return goexpr { $gs ... } } )
+    }
+
+    rule {
+	{var $as ... ; $gs ... }
+    } => {
+	(function () {
+	    var $as ... ;
+	    return goexpr { $gs ... };
+	}());
+    }
+
+    rule {
+	{$v:ident = $e:expr ; $gs ... }
+    } => {
+	(function () {
+	    $v = $e;
+	    return goexpr { $gs ... };
+	}());
     }
 
     rule {
 	{}
     } => {
+	monad.ret(undefined);
     }
 }
 
+macro go {
+    rule {
+	{ $e ... }
+    } => {
+	( goexpr { $e ... } ).run();
+    }
+
+    rule {
+	while ( $t:expr ) { $b ... }
+    } => {
+	go { while ( $t ) { $b ... } }
+    }
+
+    rule {
+	while ( $t:expr ) $b:expr;
+    } => {
+	go while ( $t ) { $b }
+    }
+
+    rule {
+	send $m:expr -> $ch:expr ;
+    } => {
+	go { send $m -> $ch; }
+    }
+}
 
 export go;
-export go_walk;
-
-
+export goexpr;
