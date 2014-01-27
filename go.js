@@ -32,28 +32,29 @@ macro goroutine {
 
     rule {
 	{
-	    while ( $t ) { $b ... }
+	    while ( $t:expr ) { $b ... }
 	    $gs ...
 	}
     } => {
 	(function () {
-	    var body = goroutine { $b ... };
-	    var rest = goroutine { $gs ... };
-	    var loop = function (_) {
-		// return ( $t ) ? bind (body , loop) : rest;
-		return ( $t ) ? body.bind (loop) : rest;
-	    };
-	    return loop ();
+          var loop = function (_) {
+            var b = goroutine { $b ... };
+            if ( $t ) {
+              return b.bind(loop);
+            }
+	    return goroutine { $gs ... };
+	  };
+	  return loop();
 	}())
     }
 
     rule {
 	{
-	    while ( $t ) $e:expr ;
+	    while ( $t:expr ) $e:expr ;
 	    $gs ...
 	}
     } => {
-	goroutine { while ( $t ) { $e:expr } $gs ... }
+	goroutine { while ( $t ) { $e } $gs ... }
     }
 
     rule {
@@ -127,13 +128,13 @@ macro go {
     }
 
     rule {
-	while ( $t ) { $b ... }
+	while ( $t:expr ) { $b ... }
     } => {
 	go { while ( $t ) { $b ... } }
     }
 
     rule {
-	while ( $t ) $b:expr;
+	while ( $t:expr ) $b:expr;
     } => {
 	go while ( $t ) { $b }
     }
@@ -197,19 +198,29 @@ var nums = chan ();
 
 var n = 0;
 
-// todo:
-// this stack overflow seems to be from channels
-// fix it.
 
-go while (true) {
+// todo:
+// while is not implemented correctly (do not executes the first while instruction
+// when restarts the loop
+
+go {
+  console.log ('pre producer');
+  while (n < 10000) {
+    console.log ('producer');
+    send n -> nums;
+    // recv _ <- timeout (1000);
+    n++;
+  }
+  console.log ('post producer');
+};
+
+go {
+  console.log ('pre consumer');
+  while (true) {
     console.log ('consumer');
     recv n <- nums;
     console.log ('n: ' + n);
-}
-
-go while (true) {
-  console.log ('producer');
-  send n -> nums;
-  // recv _ <- timeout (0);
-  n++;
+    // recv _ <- timeout (0);
+  }
+  console.log ('post consumer');
 }

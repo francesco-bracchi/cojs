@@ -1,3 +1,10 @@
+/**
+ * TODO:
+ * 1. Implement Buffered channel
+ * 2. Implement ch.close method
+ * 3. Implement fancy buffers (dropfirst, droplast)
+ * 4. Test, Test, Test
+ */
 var future = require ('./future.js'),
     monad = require ('./monad.js');
 
