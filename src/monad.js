@@ -8,18 +8,16 @@ var monad = function (fn) {
     return new Monad (fn);
 };
 
-var identity = function (x) { 
-    return future (function () { 
+var identity = function (x) {
+    return future (function () {
 	return x;
-    }); 
+    });
 };
 
 var throw_ex = function (e) { throw e; };
 
-Monad.prototype.start = function () {
-    var cont = arguments[0] || identity;
-    var fail = arguments[1] || throw_ex;
-    return this.action (cont, fail).resume();
+Monad.prototype.start = function (cont, fail) {
+    return this.action (cont || identity, fail || throw_ex).resume();
 };
 
 var ret = function (v) {
