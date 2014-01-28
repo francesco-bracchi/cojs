@@ -31,10 +31,14 @@ var ret = function (v) {
   });
 };
 
-var lazy = function (fun) {
+var exec = function (fun) {
   return monad (function (cont, fail) {
     return jump (function () {
-      return cont (fun());
+	try {
+	    return cont (fun());
+	} catch (e) {
+	    return fail (e);
+	}
     });
   });
 };
@@ -84,4 +88,5 @@ module.exports = {
   monad: monad
   ,ret: ret
   ,fail: fail
+  ,exec: exec
 };

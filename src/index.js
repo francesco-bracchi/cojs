@@ -1,14 +1,10 @@
 var chan = require ('./lib/channel'),
-    timeout = require ('./channels/timeout'),
     monad = require ('./lib/monad'),
     jump = require ('./lib/jump');
 
 module.exports = {
   // jump
   jump: jump
-
-  // timeout
-  ,timeout: timeout
 
   // channel
   ,chan: chan
@@ -17,6 +13,7 @@ module.exports = {
   ,monad: monad.monad
   ,ret: monad.ret
   ,fail: monad.fail
+  ,exec: monad.exec
 };
 
 var global = (function () {

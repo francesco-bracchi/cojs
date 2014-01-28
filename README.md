@@ -2,32 +2,19 @@
 
 ## features
 
-1. add try catch
-2. add if 
-3. add do { ... } while (test)
 4. add switch
 5. add continue/break
 
-## performance
-1. Move from 
+## Channels
 
-    monad = function (fn) { return new Monad (fn); }
+1. implement buffered channels
+2. implement close channel
+3. implement different buffer strategies
 
-to
+## Performance
 
-    monad = function (fn) { fn.run = run; return fn };
+TBD
 
-(do not create an unused wrapper object) and test performance
-or even
+## Test
 
-    macro monad {
-      rule {
-        monad ($f:ident (,) ...) $e
-      } => {
-        function ($f (,) ...) { return $e }
-      }
-    }
-
-and define an external run (define it on coroutine wrapper)
-
-2. do the same for jumps
+TBD
