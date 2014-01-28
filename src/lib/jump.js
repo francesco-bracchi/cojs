@@ -1,4 +1,6 @@
 
+'use strict';
+
 var Jump = function (f) {
     this.bounce = f;
 };
@@ -19,14 +21,14 @@ Jump.prototype.trampoline = function () {
 };
 
 
-var then = function (f, g) {
+var concat = function (f, g) {
   return jump(function () {
-    return f instanceof Jump ? then (f.bounce(), g) : g;
+    return f instanceof Jump ? concat (f.bounce(), g) : g;
   });
 };
 
-Jump.prototype.then = function (f) {
-  return then (this, f);
+Jump.prototype.concat = function (f) {
+  return concat (this, f);
 };
 
 module.exports = jump;

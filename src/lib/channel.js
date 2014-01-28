@@ -5,8 +5,11 @@
  * 3. Implement fancy buffers (dropfirst, droplast)
  * 4. Test, Test, Test
  */
+
+'use strict';
+
 var jump = require ('./jump.js'),
-    monad = require ('./monad.js');
+    monad = require ('./monad.js').monad;
 
 var Buffer = function (size) {
     this.size = size;
@@ -63,7 +66,7 @@ var unbuffered_recv = function (ch) {
 var unbuffered_send = function (ch, v) {
   return monad (function (cont, fail) {
     ch.senders.push (function () {
-      return ch.receivers.shift()(v).then (cont('undefined'));
+      return ch.receivers.shift()(v).concat (cont('undefined'));
     });
     return ch.receivers.length > 0
       ? ch.senders.shift()()
