@@ -1,21 +1,43 @@
 module.exports = function(grunt) {
 
   // Project configuration.
-    grunt.initConfig({
-      pkg: grunt.file.readJSON('package.json'),
-      sweetjs: {
-	options: {
-	  modules: ['./macros/go.js']
-	},
-	timeout: {
-	  src: 'src/lib/timeout.js',
-	  dest: 'build/lib/timeout.js'
-	},
-	channel: {
-	  src: 'src/lib/channel.js',
-	  dest: 'build/lib/channel.js'
-	}
-      },
+  grunt.initConfig({
+    pkg: grunt.file.readJSON('package.json'),
+    sweetjs: {
+  	  options: {
+	      modules: ['./macros/go.js']
+	    },
+	    timeout: {
+	      src: 'src/channels/timeout.js',
+	      dest: 'build/channels/timeout.js'
+	    },
+	    slurp: {
+	      src: 'src/channels/slurp.js',
+	      dest: 'build/channels/slurp.js'
+	    },
+	    spit: {
+	      src: 'src/channels/spit.js',
+	      dest: 'build/channels/spit.js'
+	    }
+    },
+    copy: {
+      libs: {
+        expand: true, 
+	      cwd: 'src/',
+        src: ['lib/**.js', 'index.js'], 
+        dest: 'build'
+	    },
+			macros: {
+        expand: true, 
+        src: ['macros/**.js'], 
+        dest: 'build'
+	    },
+			package: {
+			  expand: true,
+			  src: ['package.json', 'README.md'],
+        dest: 'build'
+			}
+    }
       // uglify: {
       //   build: {
       //     files: {
@@ -23,15 +45,17 @@ module.exports = function(grunt) {
       //     }
       //   }
       // }
-    });
+  });
 
   grunt.loadNpmTasks('grunt-sweet.js');
-
+    grunt.loadNpmTasks('grunt-contrib-copy');
   // grunt.loadNpmTasks('grunt-contrib-uglify');
 
-  grunt.registerTask('default', [
-    'sweetjs'
-  //  ,'uglify'
+  grunt.registerTask('build', [
+    'sweetjs:channels',
+    'copy:libs',
+	  'copy:macros',
+		'copy:package'
   ]);
 
 };

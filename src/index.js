@@ -1,5 +1,5 @@
 var chan = require ('./lib/channel'),
-    timeout = require ('./lib/timeout'),
+    timeout = require ('./channels/timeout'),
     monad = require ('./lib/monad'),
     jump = require ('./lib/jump');
 

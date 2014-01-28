@@ -1,4 +1,3 @@
-
 macro goexpr {
   rule {
     {
@@ -7,7 +6,6 @@ macro goexpr {
     }
   } => {
     $ch . recv () . bind (function ( $v) { return goexpr { $gs ... } } )
-    // bind ( recv ( $ch ) , function ( $v ) { return goexpr { $gs ... } } )
   }
 
   rule {
