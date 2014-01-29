@@ -14,6 +14,7 @@ module.exports = {
   ,ret: monad.ret
   ,fail: monad.fail
   ,exec: monad.exec
+  ,undef: monad.ret (undefined)
 };
 
 var global = (function () {
