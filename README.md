@@ -18,3 +18,21 @@ TBD
 ## Test
 
 TBD
+
+# install
+
+## Node
+
+TBD
+
+## requirejs
+
+TBD
+
+## google closure library
+
+TBD
+
+## Plain javascript
+
+TBD

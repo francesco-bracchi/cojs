@@ -1,4 +1,3 @@
-
 'use strict';
 
 var jump = require ('./jump');
@@ -11,16 +10,20 @@ var monad = function (fn) {
   return new Monad (fn);
 };
 
-var identity = function (x) {
+var _value = function (x) {
   return jump (function () {
     return x;
   });
 };
 
-var throw_ex = function (e) { throw e; };
+var _throw_value = function (e) {
+  throw e;
+};
 
 Monad.prototype.run = function (cont, fail) {
-  return this.action (cont || identity, fail || throw_ex).trampoline();
+  var k = cont || _value;
+  var f = fail || _throw_value;
+  return this.action (k, f).trampoline();
 };
 
 var ret = function (v) {
@@ -30,6 +33,14 @@ var ret = function (v) {
     });
   });
 };
+
+// var failValue = function (e) {
+//   return monad (function (cont, fail) {
+//     return jump (function () {
+//       return fail (e);
+//     });
+//   });
+// };
 
 var exec = function (fun) {
   return monad (function (cont, fail) {
@@ -43,10 +54,14 @@ var exec = function (fun) {
   });
 };
 
-var fail = function (e) {
+var fail = function (fun) {
   return monad (function (cont, fail) {
     return jump (function () {
-      return fail (e);
+      try {
+        return fail (fun ());
+      } catch (e) {
+        return fail (e);
+      }
     });
   });
 };
@@ -63,7 +78,7 @@ var bind = function (m, next) {
   });
 };
 
-var catchFail = function (m, handler) {
+var alt = function (m, handler) {
   return monad (function (cont, fail) {
     return jump(function () {
       return m.action (cont, function (err) {
@@ -79,10 +94,9 @@ Monad.prototype.bind = function (fun) {
   return bind (this, fun);
 };
 
-Monad.prototype.catchFail = function (fun) {
-  return catchFail (this, fun);
+Monad.prototype.alt = function (fun) {
+  return alt (this, fun);
 };
-
 
 module.exports = {
   monad: monad

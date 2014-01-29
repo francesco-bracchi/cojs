@@ -82,78 +82,87 @@ UnbufferedChannel.prototype.recv = function () {
   return unbuffered_recv (this);
 };
 
-var BufferedChannel = function (buffer) {
-    Channel.call (this);
-    this.buffer = buffer;
-};
+// var BufferedChannel = function (buffer) {
+//     Channel.call (this);
+//     this.buffer = buffer;
+// };
 
-/**
- * Buffered Channel
- *
- * ### Invariant
- *
- * the total number of calls of recv minus the tocal calls of send is
- * equal to the length of receivers plus buffer minus senders.
- * TODO: write better about this invariant
- */
-BufferedChannel.prototype = new Channel();
+// /**
+//  * Buffered Channel
+//  *
+//  * ### Invariant
+//  *
+//  * the total number of calls of recv minus the tocal calls of send is
+//  * equal to the length of receivers plus buffer minus senders.
+//  * TODO: write better about this invariant
+//  */
+// BufferedChannel.prototype = new Channel();
 
-/**
- * Buffered send
- * + if buffer is full
- * 1. suspend the current routine
- *
- * + if buffer is not full
- * 1. enqueue the yielded value
- * 2. continue with current routine
- * 3. try to resume one receiver
- *
- * Why only one?
- * of course, because of the invariant.
- */
-BufferedChannel.prototype.send = function (v, cont) {
-    // if buffer is full suspend me
-    if (this.buffer.full()) {
-	var ch = this;
-	this.senders.push (function () { ch.send (v, cont); });
-    }
-    else {
-	this.buffer.enq (v);
-	cont();
-    }
-    if (this.receivers.length > 0 && ! this.buffer.empty()) {
-	this.receivers.shift()(this.buffer.deq());
-    }
-};
+// /**
+//  * Buffered send
+//  * + if buffer is full
+//  * 1. suspend the current routine
+//  *
+//  * + if buffer is not full
+//  * 1. enqueue the yielded value
+//  * 2. continue with current routine
+//  * 3. try to resume one receiver
+//  *
+//  * Why only one?
+//  * of course, because of the invariant.
+//  */
+// BufferedChannel.prototype.send = function (v, cont) {
+//     /* if buffer is full suspend me */
+//     if (this.buffer.full()) {
+// 	var ch = this;
+// 	this.senders.push (function () { ch.send (v, cont); });
+//     }
+//     else {
+// 	this.buffer.enq (v);
+// 	cont();
+//     }
+//     if (this.receivers.length > 0 && ! this.buffer.empty()) {
+// 	this.receivers.shift()(this.buffer.deq());
+//     }
+// };
 
-BufferedChannel.prototype.recv = function (cont) {
-    if (this.buffer.empty()) {
-	this.receivers.push (cont);
-    } else {
-	cont(this.buffer.deq());
-    }
-    if (this.senders.length > 0) {
-	this.senders.shift()();
-    }
-};
+// BufferedChannel.prototype.recv = function (cont) {
+//     if (this.buffer.empty()) {
+// 	this.receivers.push (cont);
+//     } else {
+// 	cont(this.buffer.deq());
+//     }
+//     if (this.senders.length > 0) {
+// 	this.senders.shift()();
+//     }
+// };
 
-var AltChannel = function (left, right) {
-    this.left = left;
-    this.right = right;
-};
+// var AltChannel = function (left, right) {
+//     this.left = left;
+//     this.right = right;
+// };
+
+// AltChannel.prototype.recv = function () {
+//   return alt_recv
+//   var left = this.left,
+//       right = m1 = this.left.recv (),
+//       m2 = this.right.recv ();
+//   return monad (function (cont, fail) {
+//     var k1 = function (v) {
+
+//     };
+//     m1.action (cont, fail);
+//   })
+// };
 
 var chan = function (size) {
-  var result;
-  if (typeof size === 'number' && size > 0) {
-    result = new BufferedChannel (new Buffer (size));
-  }
-  else if (size instanceof Buffer) {
-    result = new BufferedChannel(size);
-  }
-  else {
-    result = new UnbufferedChannel();
-  }
-  return result;
+  // if (typeof size === 'number' && size > 0) {
+  //   return new BufferedChannel (new Buffer (size));
+  // }
+  // if (size instanceof Buffer) {
+  //   return new BufferedChannel(size);
+  // }
+  return new UnbufferedChannel();
 };
 
 chan.Buffer = Buffer;

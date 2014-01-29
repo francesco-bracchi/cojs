@@ -46,57 +46,50 @@ macro goexpr {
   } => {
     goexpr { while ( $t ) { $e } $gs ... }
   }
-    
+
   rule {
     {
       do { $b ... } while ( $t:expr ) ;
       $gs ...
     }
   } => {
-			(function () {
-    			var b = goexpr { $b ... };
-					var r = goexpr { $gs ... };
-					var loop = function () { return ( $t ) ? b.bind (loop) : r; };
-          return b.bind(loop);
-      }())
+    (function () {
+      var b = goexpr { $b ... };
+      var r = goexpr { $gs ... };
+      var loop = function () { return ( $t ) ? b.bind (loop) : r; };
+      return b.bind(loop);
+    }())
+  }
+  // todo: handle the case of { return $e ; $g ... } (raising an error at macroexpansion time?)
+  rule {
+    { return $e:expr ; }
+  } => {
+    __async__ . exec ( function () { return $e } )
   }
 
+  // todo: handle the case of { throw $e ; $g ... } (raising an error at macroexpansion time?)
   rule {
-    { throw $e:expr; }
+    { throw $e:expr ; }
   } => {
-    __async__ . fail ( $e )
+    __async__ . fail ( function () { return $e } )
   }
 
   rule {
     { if ( $t ) { $l ... } else { $r ... } $gs ... }
   } => {
-    (function () {
-      var rest = function () { return goexpr { $gs ... } };
-      return ( $t )
-	? ( goexpr { $l ... } ) . bind ( $rest )
-      : ( goexpr { $r ... } ) . bind ( $rest );
-    }())
+    ( ( $t ) ? ( goexpr { $l ... } ) : ( goexpr { $r ... } ) ). bind ( function () { return goexpr { $gs ... } } )
   }
 
   rule {
     { try { $e ... } catch ( $ex:ident ) { $f ... } $gs ... }
   } => {
-    ( goexpr { $e ... } )
-      . catchFail ( function ( $ex ) { return goexpr { $f ... }; } )
-      . bind ( function ( ) { return goexpr { $gs ... }; } )
-  }
-
-  // throw rule: not good because evaluating $e can raise another error
-  rule {
-    { throw $e:expr ; }
-  } => {
-    __async__ . fail ( $e )
+    ( goexpr { $e ... } ) . alt ( function ( $ex ) { return goexpr { $f ... }; } ) . bind ( function ( ) { return goexpr { $gs ... }; } )
   }
 
   rule {
-    { $g:expr ; }
+    { $e:expr ; }
   } => {
-      __async__. exec ( function () { $g ; } ) 
+      __async__. exec ( function () { return $e ; } )
   }
 
   rule {
@@ -119,7 +112,7 @@ macro goexpr {
   } => {
       __async__.exec (function () { $v = $e ; }).bind ( $goexpr { $gs ... } )
   }
-    
+
   rule {
     {}
   } => {
@@ -149,7 +142,7 @@ macro go {
   rule {
 			do { $b ... } while ( $t:expr ) ;
   } => {
-    go { do { $b ... } while ( $t ) ; }  
+    go { do { $b ... } while ( $t ) ; }
   }
 
   rule {
