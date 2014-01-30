@@ -286,12 +286,27 @@ macro goexpr {
    * right otherwise.
    */
   rule {
-    { if ( $t ) { $l ... } else { $r ... } $gs ... }
+    { if ( $t:expr ) { $l ... } else { $r ... } $gs ... }
   } => {
-    reify t = goexpr { $t ; },
-          l = goexpr { $l ... },
-          r = goexpr { $r ... }
-      => gobind k = t { k ? l : r }
+    goexpr { $t } . bind ( function ( k ) { return k ? goexpr { $l ... } : goexpr { $r ... } ;  } )
+  }
+
+  rule {
+    { if ( $t:expr ) { $e ... } $gs ... }
+  } => {
+    goexpr { if ( $t ) { $e ... } else { undefined } $gs ... }
+  }
+
+  rule {
+    { if ( $t:expr ) $e:expr ; $gs ... }
+  } => {
+    goexpr { if ( $t ) { $e } else { undefined } $gs ... }
+  }
+
+  rule {
+    { if ( $t:expr ) $e ... else $f:expr $gs ... }
+  } => {
+    { if ( $t ) $e ... else { $f } $gs ... }
   }
 
   /**
