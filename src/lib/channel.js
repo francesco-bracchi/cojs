@@ -11,6 +11,8 @@
 var jump = require ('./jump.js'),
     monad = require ('./monad.js').monad;
 
+var channel_closed = new Error ('Channel is Closed');
+
 var Buffer = function (size) {
   this.size = size;
   this.data = [];
@@ -57,7 +59,7 @@ UnbufferedChannel.prototype = new Channel();
 var unbuffered_recv = function (ch) {
   return monad (function (cont, fail) {
     ch.receivers.push (function (v) {
-      return ch.closed ? fail (new Error ('channel is closed')) : cont (v);
+      return ch.closed ? fail (channel_closed) : cont (v);
     });
     if (ch.senders.length > 0) {
       return ch.senders.shift()();
@@ -70,7 +72,7 @@ var unbuffered_send = function (ch, v) {
   return monad (function (cont, fail) {
     ch.senders.push (function () {
       if (ch.closed) {
-        return fail (new Error ('channel is closed'));
+        return fail (channel_closed);
       }
       return ch.receivers.shift()(v).concat (cont());
     });
@@ -96,6 +98,59 @@ UnbufferedChannel.prototype.close = function () {
   while (this.senders.length > 0) {
     this.senders.shift()().trampoline();
   }
+};
+
+var BufferedChannel = function (buffer) {
+  Channel.call (this);
+  this.buffer = buffer;
+};
+
+BufferedChannel.prototype = new Channel();
+
+var resumeSend = function (ch) {  
+  return ch.senders.length > 0 
+    ? jump (ch.senders.shift()).concat (jump(function () { return resumeSend(ch); }))
+    : jump(function () { return undefined; });
+};
+
+var resumeRecv = function (ch) {  
+  return ch.receivers.length > 0 
+    ? jump (ch.receivers.shift()).concat (jump(function () { return resumeRecv(ch); }))
+    : jump(function () { return undefined; });
+};
+
+var buffered_recv = function (ch) {
+  return monad (function (cont, fail) {
+    var resume = function () {
+      return ch.closed ? fail (channel_closed) : cont (ch.buffer.deq());
+    };
+    if (ch.buffer.empty()) {
+      ch.recivers.push (resume);
+      resumeSend(ch);
+    }
+    return jump (resume).concat(resumeSend (ch));
+  });
+};
+
+var buffered_send = function (ch, v) {
+  return monad (function (cont, fail) {
+    var resume = function () {
+      return ch.closed ? fail (channel_closed) : cont (ch.buffer.enq (v)); 
+    };
+    if (ch.buffer.full()) {
+      ch.senders.push (resume);
+      return resumeRecv (ch);
+    }
+    return jump (resume).concat(resumeRecv(ch));
+  });
+};
+
+BufferedChannel.prototype.recv = function () {
+  return buffered_recv (this);
+};
+
+BufferedChannel.prototype.send = function (v) {
+  return buffered_send (this, v);
 };
 
 var chan = function (size) {

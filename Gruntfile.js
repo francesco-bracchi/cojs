@@ -4,7 +4,7 @@ module.exports = function(grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
     sweetjs: {
-  	  options: {
+      options: {
 	      modules: ['./macros/go.js']
 	    },
 	    timeout: {
@@ -47,15 +47,18 @@ module.exports = function(grunt) {
       // }
   });
 
+  
   grunt.loadNpmTasks('grunt-sweet.js');
-    grunt.loadNpmTasks('grunt-contrib-copy');
+  grunt.loadNpmTasks('grunt-contrib-copy');
   // grunt.loadNpmTasks('grunt-contrib-uglify');
+  
+  grunt.registerTask('build-channels', [ 'sweetjs:timeout', 'sweetjs:slurp', 'sweetjs:spit' ]);
 
   grunt.registerTask('build', [
-    'sweetjs:channels',
-    'copy:libs',
-	  'copy:macros',
-		'copy:package'
+      'build-channels',
+      'copy:libs',
+      'copy:macros',
+      'copy:package'
   ]);
 
 };

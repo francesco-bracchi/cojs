@@ -108,6 +108,7 @@ macro goseq {
  * ## gotry
  *
  * Synstactic sugar on try/catch.
+ * TBD: why not finally (currently no because of the lack of continue/break)
  * example:
  *
  *     try <monad> catch (v) <monad>
@@ -249,12 +250,12 @@ macro goexpr {
       $gs ...
     }
   } => {
-
     ( function loop () {
       return goexpr { $b ... } goseq goexpr { $t } . bind ( function ( k ) {
         return k ? loop () : goexpr { $gs ... } ;
         } ) ; } () )
   }
+
   /**
    * ## Return statement
    *
@@ -418,7 +419,7 @@ macro go {
   } => {
     ( goexpr { $e ... } ) . run ()
   }
-
+  
   rule {
     while ( $t:expr ) { $b ... }
   } => {
@@ -448,6 +449,11 @@ macro go {
   } => {
     go { send $m -> $ch; }
   }
+  rule {
+    for ( $h ... ) { $b ... }
+  } => {
+    go { for ( $h ... ) { $b ... } }
+  }
 }
 
 /**
@@ -459,5 +465,3 @@ macro go {
  */
 export go;
 export goexpr;
-export gotry;
-export goseq;
