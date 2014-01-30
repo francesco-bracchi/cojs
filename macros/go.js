@@ -222,12 +222,11 @@ macro goexpr {
       $gs ...
     }
   } => {
-    reify b = goexpr { $b ... } ,
-          g = goexpr { $gs ... } ,
-          t = goexpr { $t }
-      => function loop () { return gobind k = t { k ? b . bind (loop) : g } } ()
+    ( function loop () {
+      return goexpr { $t } . bind ( function (k) {
+        return k ? goexpr { $b ... } . bind (loop) : goexpr { $gs ... } ; } )
+      } () )
   }
-
   rule {
     {
       while ( $t:expr ) $e:expr ;
@@ -250,10 +249,11 @@ macro goexpr {
       $gs ...
     }
   } => {
-    reify b = goexpr { $b ... } ,
-          g = goexpr { $gs ... } ,
-          t = goexpr { $t ; }
-      => b.bind ( function loop () { return gobind k = t { k ? b . bind (loop) : g } } )
+
+    ( function loop () {
+      return goexpr { $b ... } goseq goexpr { $t } . bind ( function ( k ) {
+        return k ? loop () : goexpr { $gs ... } ;
+        } ) ; } () )
   }
   /**
    * ## Return statement
@@ -392,7 +392,7 @@ macro go {
   rule {
     { $e ... }
   } => {
-    ( goexpr { $e ... } ).run()
+    ( goexpr { $e ... } ) . run ()
   }
 
   rule {
