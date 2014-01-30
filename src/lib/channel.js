@@ -12,50 +12,53 @@ var jump = require ('./jump.js'),
     monad = require ('./monad.js').monad;
 
 var Buffer = function (size) {
-    this.size = size;
-    this.data = [];
+  this.size = size;
+  this.data = [];
 };
 
 Buffer.prototype.enq = function (v) {
-    if (this.full()) {
-      throw new Error ("buffer full");
-    }
-    this.data.push (v);
+  if (this.full()) {
+    throw new Error ("buffer full");
+  }
+  this.data.push (v);
 };
 
 Buffer.prototype.deq = function () {
-    if (this.empty()) {
-      throw new Error ('buffer empty');
-    }
-    return this.data.shift();
+  if (this.empty()) {
+    throw new Error ('buffer empty');
+  }
+  return this.data.shift();
 };
 
 Buffer.prototype.bound = function () {
-    return this.size !== undefined;
+  return this.size !== undefined;
 };
 
 Buffer.prototype.full = function () {
-    return this.bound() && this.data.length >= this.size;
+  return this.bound() && this.data.length >= this.size;
 };
 
 Buffer.prototype.empty = function () {
-    return this.data.length <= 0;
+  return this.data.length <= 0;
 };
 
 var Channel = function () {
-    this.receivers = [];
-    this.senders = [];
+  this.receivers = [];
+  this.senders = [];
+  this.closed = false;
 };
 
 var UnbufferedChannel = function () {
-    Channel.call (this);
+  Channel.call (this);
 };
 
 UnbufferedChannel.prototype = new Channel();
 
 var unbuffered_recv = function (ch) {
   return monad (function (cont, fail) {
-    ch.receivers.push (cont);
+    ch.receivers.push (function (v) {
+      return ch.closed ? fail (new Error ('channel is closed')) : cont (v);
+    });
     if (ch.senders.length > 0) {
       return ch.senders.shift()();
     }
@@ -66,7 +69,10 @@ var unbuffered_recv = function (ch) {
 var unbuffered_send = function (ch, v) {
   return monad (function (cont, fail) {
     ch.senders.push (function () {
-      return ch.receivers.shift()(v).concat (cont('undefined'));
+      if (ch.closed) {
+        return fail (new Error ('channel is closed'));
+      }
+      return ch.receivers.shift()(v).concat (cont());
     });
     return ch.receivers.length > 0
       ? ch.senders.shift()()
@@ -82,78 +88,16 @@ UnbufferedChannel.prototype.recv = function () {
   return unbuffered_recv (this);
 };
 
-// var BufferedChannel = function (buffer) {
-//     Channel.call (this);
-//     this.buffer = buffer;
-// };
-
-// /**
-//  * Buffered Channel
-//  *
-//  * ### Invariant
-//  *
-//  * the total number of calls of recv minus the tocal calls of send is
-//  * equal to the length of receivers plus buffer minus senders.
-//  * TODO: write better about this invariant
-//  */
-// BufferedChannel.prototype = new Channel();
-
-// /**
-//  * Buffered send
-//  * + if buffer is full
-//  * 1. suspend the current routine
-//  *
-//  * + if buffer is not full
-//  * 1. enqueue the yielded value
-//  * 2. continue with current routine
-//  * 3. try to resume one receiver
-//  *
-//  * Why only one?
-//  * of course, because of the invariant.
-//  */
-// BufferedChannel.prototype.send = function (v, cont) {
-//     /* if buffer is full suspend me */
-//     if (this.buffer.full()) {
-// 	var ch = this;
-// 	this.senders.push (function () { ch.send (v, cont); });
-//     }
-//     else {
-// 	this.buffer.enq (v);
-// 	cont();
-//     }
-//     if (this.receivers.length > 0 && ! this.buffer.empty()) {
-// 	this.receivers.shift()(this.buffer.deq());
-//     }
-// };
-
-// BufferedChannel.prototype.recv = function (cont) {
-//     if (this.buffer.empty()) {
-// 	this.receivers.push (cont);
-//     } else {
-// 	cont(this.buffer.deq());
-//     }
-//     if (this.senders.length > 0) {
-// 	this.senders.shift()();
-//     }
-// };
-
-// var AltChannel = function (left, right) {
-//     this.left = left;
-//     this.right = right;
-// };
-
-// AltChannel.prototype.recv = function () {
-//   return alt_recv
-//   var left = this.left,
-//       right = m1 = this.left.recv (),
-//       m2 = this.right.recv ();
-//   return monad (function (cont, fail) {
-//     var k1 = function (v) {
-
-//     };
-//     m1.action (cont, fail);
-//   })
-// };
+UnbufferedChannel.prototype.close = function () {
+  this.closed = true;
+  var cont;
+  while (this.receivers.length > 0) {
+    cont = this.receivers.shift()();
+  }
+  while (this.senders.length > 0) {
+    cont = this.senders.shift()();
+  }
+};
 
 var chan = function (size) {
   // if (typeof size === 'number' && size > 0) {

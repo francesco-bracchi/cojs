@@ -2,8 +2,10 @@
 
 ## features
 
+3. extend if statement
 4. add switch
 5. add continue/break
+6. finally to the try catch block
 
 ## Channels
 
