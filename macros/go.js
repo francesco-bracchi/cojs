@@ -321,10 +321,7 @@ macro goexpr {
   rule {
     { try { $e ... } catch ( $ex:ident ) { $f ... } $gs ... }
   } => {
-    reify e = goexpr { $e ... },
-          f = goexpr { $f ... },
-          g = goexpr { $gs ... }
-      => (gotry e catch ( $ex ) f) seq g
+    ( gotry goexpr { $e ... } catch ( $ex ) goexpr { $f ... } ) . bind ( function () { return goexpr { $gs ... } ; } )
   }
   /**
    * ## Var's
@@ -450,3 +447,5 @@ macro go {
  */
 export go;
 export goexpr;
+export gotry;
+export goseq;
