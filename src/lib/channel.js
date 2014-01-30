@@ -90,12 +90,11 @@ UnbufferedChannel.prototype.recv = function () {
 
 UnbufferedChannel.prototype.close = function () {
   this.closed = true;
-  var cont;
   while (this.receivers.length > 0) {
-    cont = this.receivers.shift()();
+    this.receivers.shift()().trampoline();
   }
   while (this.senders.length > 0) {
-    cont = this.senders.shift()();
+    this.senders.shift()().trampoline();
   }
 };
 
