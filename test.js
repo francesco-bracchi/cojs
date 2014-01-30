@@ -16,6 +16,7 @@ var async = require ('./src/index.js');
 
 go {
   try {
+    throw "ciao";
     console.log ('x');
   } catch (e) {
     console.log ('eddor:');

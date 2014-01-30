@@ -274,9 +274,21 @@ macro goexpr {
    * It can be handled using the classical `try { } catch (e) { } ` statement.
    */
   rule {
+    { throw $e:expr }
+  } => {
+    gofail $e
+  }
+
+  rule {
     { throw $e:expr ; }
   } => {
     gofail $e
+  }
+
+  rule {
+    { throw $e:expr ; $gs ...}
+  } => {
+    ( gofail $e ) . bind ( function () { return goexpr { $gs ... } ; } )
   }
 
   /**
