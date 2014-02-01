@@ -16,6 +16,3 @@ go {
   ch.close();
 };
 
-
-47.46user 0.54system 0:48.85elapsed 98%CPU (0avgtext+0avgdata 53840maxresident)k
-0inputs+0outputs (0major+13588minor)pagefaults 0swaps

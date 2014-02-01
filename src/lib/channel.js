@@ -204,7 +204,7 @@ BufferedChannel.prototype.send = function (v) {
   return buffered_send (this, v);
 };
 
-VufferedChannel.prototype.close = function () {
+BufferedChannel.prototype.close = function () {
   this.closed = true;
   while (this.receivers.length > 0) {
     this.receivers.shift()().trampoline();
