@@ -198,33 +198,32 @@ BufferedChannel.prototype = new Channel();
 
 var buffered_recv = function (ch) {
   return monad (function (cont, fail) {
-    var resume = function (v) {
-      return ch.closed ? fail (channel_closed) : cont (ch.buffer.deq());
+    var resume = function () {
+      return ch.closed && ch.buffer.empty() ? fail (channel_closed) : cont (ch.buffer.deq());
     };
-    if (!ch.buffer.empty()) {
-
+    if (! ch.closed && ! ch.buffer.empty()) {
+      return jump (resume);
     }
+    ch.receivers.push(resume);
     if (ch.senders.length > 0) {
-      return jump(resume);
+      return jump(ch.senders.shift());
     }
-    ch.receivers.push (resume);
     return jump (function () { return 'recv'; });
   });
 };
 
 var buffered_send = function (ch, v) {
   return monad (function (cont, fail) {
-    if (! ch.buffer.full()) {
-      console.log ('continue send');
-      cont (ch.buffer.enq(v));
-    }
-    var resume = function () {
-      return ch.closed ? fail(channel_closed) : ch.receivers.shift()(v).concat (cont());
+    var resume= function () {
+      return ch.closed ? fail (channel_closed) : cont (ch.buffer.enq(v));
     };
-    if (ch.receivers.length > 0) {
-      return jump(resume);
+    if (! ch.closed && ! ch.buffer.full()) {
+      return jump (resume);
     }
-    ch.senders.push (resume);
+    ch.senders.push(resume);
+    if (ch.receivers.length > 0) {
+      return jump (ch.receivers.shift());
+    }
     return jump (function () { return 'send'; });
   });
 };

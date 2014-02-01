@@ -20,15 +20,4 @@ Jump.prototype.trampoline = function () {
   return trampoline (this);
 };
 
-
-var concat = function (f, g) {
-  return jump(function () {
-    return f instanceof Jump ? concat (f.bounce(), g) : g;
-  });
-};
-
-Jump.prototype.concat = function (f) {
-  return concat (this, f);
-};
-
 module.exports = jump;
