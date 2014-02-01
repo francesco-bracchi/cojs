@@ -1,18 +1,22 @@
 var async = require ('./src/index.js');
 
-var m = 5000, n = 0, ch = async.chan(10);
+var m = 13, n = 0, ch = async.chan();
 
-go while (true) {
-  recv v <- ch;
-//  console.log ('new number: ' + v);
+go try { 
+  while (true) {
+    recv v <- ch;
+    console.log ('received: ' + v);
+  }
+} catch (ex) {
+  console.log (ex);
 };
+
 
 go {
   while (n < m) {
-    send  n -> ch;
-    // console.log ('sent: ' + n);
+    send n -> ch;
+    console.log ('sent: ' + n);
     n++;
   }
   ch.close();
 };
-
