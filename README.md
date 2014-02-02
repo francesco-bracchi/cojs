@@ -2,17 +2,14 @@
 
 ## features
 
-3. extend if statement
-4. add switch
-5. add continue/break
-6. finally to the try catch block
+1. add switch
+1. add continue/break
+1. finally to the try catch block
 
 ## Channels
 
-1. implement buffered channels
-2. implement close channel
-3. implement different buffer strategies
-
+1. implement alt operation
+1. implement different buffer strategies
 ## Performance
 
 TBD

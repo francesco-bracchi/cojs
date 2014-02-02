@@ -157,6 +157,55 @@ var chan = function (size) {
   return new Channel();
 };
 
+var AltChannel = function (c0, c1) {
+  this.c0 = c0;
+  this.c1 = c1;
+};
+
+var altchannel_recv = function (c0, c1) {
+  return monad(function (cont, fail) {
+    var m0 = c0.recv(),
+        m1 = c1.recv(),
+        a0 = m0.action (function (v) {
+          if (triggered) {
+            return c0.send (v).action (cont, fail);
+          }
+          triggered = 1;
+          return cont (v);
+        }, fail),
+        a1 = m1.action (function (v) {
+          if (triggered) {
+            return c1.send (v).action (cont, fail);
+          }
+          triggered = 2;
+          return cont (v);
+        }, fail);
+    a0.trampoline();
+    a1.trampoline();
+    return jump(function () { return undefined; });
+  });
+};
+
+AltChannel.prototype.recv = function () {
+  var c0 = this.c0, c1 = this.c1;
+  return altchannel_recv (c0, c1);
+};
+
+AltChannel.prototype.send = function (v) {
+  // TBD
+};
+
+Channel.prototype.alt =
+BufferedChannel.prototype.alt =
+AltChannel.prototype.alt = function (c1) {
+  return new AltChannel(this, c1);
+};
+
 chan.Buffer = Buffer;
 
 module.exports = chan;
+
+// module.exports {
+//   chan: chan,
+//   Buffer: Buffer
+// }

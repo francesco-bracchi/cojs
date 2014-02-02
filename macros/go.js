@@ -7,29 +7,6 @@
  */
 
 /**
- * ## reify
- *
- * This macro is the same of (let ((?k ?v) ...) ?b) and is transformed in
- * ((lambda (?k ...) $b) $v ...)
- *
- * it's useful in defining local stuff (not recursively :) )
- */
-macro reify {
-  rule {
-    $( $v:ident = $e:expr) (,) ...  { $b:expr }
-  } => {
-    ( function ( $v (,) ... ) { return $b ; } ( $e (,) ... ) )
-  }
-  rule {
-    $( $v:ident = $e:expr) (,) ... => $b:expr
-  } => {
-    ( function ( $v (,) ... ) { return $b ; } ( $e (,) ... ) )
-  }
-}
-
-/** ## shorthands **/
-
-/**
  * ### gojs
  *
  * Wraps a javascript expression in a monad.
@@ -224,9 +201,9 @@ macro goexpr {
     }
   } => {
     ( function loop () {
-      return goexpr { $t } . bind ( function (k) {
-        return k ? goexpr { $b ... } . bind (loop) : goexpr { $gs ... } ; } )
-      } () )
+      return goexpr { $t } . bind ( function ( k ) {
+        return k ? goexpr { $b ... } . bind ( loop ) : goexpr { $gs ... } ; } )
+    } () )
   }
   rule {
     {
@@ -334,6 +311,7 @@ macro goexpr {
   rule {
     { try { $e ... } catch ( $ex:ident ) { $f ... } $gs ... }
   } => {
+    // ( gotry goexpr { $e ... } catch ( $ex ) goeexpr { $f ... } ) goseq ( goexpr { $gs ... } )
     ( gotry goexpr { $e ... } catch ( $ex ) goexpr { $f ... } ) . bind ( function () { return goexpr { $gs ... } ; } )
   }
   /**
@@ -417,7 +395,7 @@ macro go {
   rule {
     { $e ... }
   } => {
-    ( goexpr { $e ... } ) . run ()
+    ( goexpr { $e ... } ) . run ();
   }
   
   rule {
