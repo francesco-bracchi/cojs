@@ -1,11 +1,10 @@
 var async = require ('./src/index.js');
 
-var m = 13, n = 0, ch = async.chan(5);
+var m = 13000, n = 0, ch = async.chan();
 
 go {
   while (n < m) {
     send n -> ch;
-    console.log ('sent: ' + n);
     n++;
   }
   ch.close();

@@ -13,37 +13,6 @@ var jump = require ('./jump.js'),
 
 var channel_closed = new Error ('Channel is Closed');
 
-// var Buffer = function (size) {
-//   this.size = size;
-//   this.data = [];
-// };
-
-// Buffer.prototype.enq = function (v) {
-//   if (this.full()) {
-//     throw new Error ("buffer full");
-//   }
-//   this.data.push (v);
-// };
-
-// Buffer.prototype.deq = function () {
-//   if (this.empty()) {
-//     throw new Error ('buffer empty');
-//   }
-//   return this.data.shift();
-// };
-
-// Buffer.prototype.bound = function () {
-//   return this.size !== undefined;
-// };
-
-// Buffer.prototype.full = function () {
-//   return this.bound() && this.data.length >= this.size;
-// };
-
-// Buffer.prototype.empty = function () {
-//   return this.data.length <= 0;
-// };
-
 var Buffer = function (size) {
   this.size = size;
   this.data = new Array (size);
@@ -65,9 +34,6 @@ Buffer.prototype.deq = function () {
   if (this.isfull) {
     this.isfull = false;
   }
-  // if (this.empty()) {
-  //   throw new Error ('empty buffer');
-  // }
   this.rear = ++ this.rear % this.size;
   return this.data [this.rear];
 };
@@ -86,13 +52,7 @@ var Channel = function () {
   this.closed = false;
 };
 
-var UnbufferedChannel = function () {
-  Channel.call (this);
-};
-
-UnbufferedChannel.prototype = new Channel();
-
-var unbuffered_recv = function (ch) {
+var recv = function (ch) {
   return monad (function (cont, fail) {
     ch.receivers.push (function (v) {
       return ch.closed ? fail (channel_closed) : cont (v);
@@ -104,7 +64,7 @@ var unbuffered_recv = function (ch) {
   });
 };
 
-var unbuffered_send = function (ch, v) {
+var send = function (ch, v) {
   return monad (function (cont, fail) {
     
     ch.senders.push (function () {
@@ -118,15 +78,16 @@ var unbuffered_send = function (ch, v) {
   });
 };
 
-UnbufferedChannel.prototype.send = function (v) {
-  return unbuffered_send (this, v);
+Channel.prototype.send = function (v) {
+  return send (this, v);
 };
 
-UnbufferedChannel.prototype.recv = function () {
-  return unbuffered_recv (this);
+Channel.prototype.recv = function () {
+  return recv (this);
 };
 
-UnbufferedChannel.prototype.close = function () {
+// verify this part about running pending things
+Channel.prototype.close = function () {
   this.closed = true;
   while (this.receivers.length > 0) {
     this.receivers.shift()().trampoline();
@@ -142,59 +103,6 @@ var BufferedChannel = function (buffer) {
 };
 
 BufferedChannel.prototype = new Channel();
-
-// var resumeSend = function (ch) {
-//   if (ch.senders.length === 0) {
-//     return jump (function () { return undefined; });
-//   }
-//   var resumeSender = ch.senders.shift(),
-//       resumeAgain = jump(function () {
-//         return resumeSend (ch);
-//       });
-//   return jump(resumeSender).concat(resumeAgain);
-// };
-
-// var resumeRecv = function (ch) {
-//   if (ch.receivers.length === 0) {
-//     return jump (function () { return undefined; });
-//   }
-//   var resume = ch.receivers.shift(),
-//       resumeAgain = jump(function () { return resumeRecv(ch); });
-
-//   return jump(resume).concat(resumeAgain);
-// };
-
-// var buffered_recv = function (ch) {
-//   return monad (function self (cont, fail) {
-//     if (ch.closed) {
-//       return fail (channel_closed);
-//     }
-//     if (! ch.buffer.empty()) {
-//       var me = jump(function () { return cont (ch.buffer.deq()); }),
-//           rs = jump(function () { return resumeSend(ch); });
-//       return me.concat(rs);
-//     }
-//     ch.receivers.push (function () {
-//       return self(cont, fail);
-//     });
-//     return jump(function() { return undefined; });
-//   });
-// };
-
-// var buffered_send = function (ch, v) {
-//   return monad (function self (cont, fail) {
-//     if (ch.closed) {
-//       return fail (channel_closed);
-//     }
-//     if (! ch.buffer.full()) {
-//       var me = jump(function () { ch.buffer.enq(v); return cont(); }),
-//           rs = jump(function () { return resumeRecv(ch); });
-//       return me.concat(rs);
-//     }
-//     ch.senders.push (function () { return self (cont, fail); });
-//     return jump (function () { return undefined; });
-//   });
-// };
 
 var buffered_recv = function (ch) {
   return monad (function (cont, fail) {
@@ -245,14 +153,15 @@ BufferedChannel.prototype.close = function () {
     this.senders.shift()().trampoline();
   }
 };
+
 var chan = function (size) {
   if (typeof size === 'number' && size > 0) {
-    return new BufferedChannel (new Buffer (size));
+    return chan (new Buffer (size));
   }
-  // if (size instanceof Buffer) {
-  //   return new BufferedChannel(size);
-  // }
-  return new UnbufferedChannel();
+  if (size instanceof Buffer) {
+    return new BufferedChannel (size);
+  }
+  return new Channel();
 };
 
 chan.Buffer = Buffer;
