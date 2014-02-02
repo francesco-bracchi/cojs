@@ -86,9 +86,9 @@ Channel.prototype.recv = function () {
   return recv (this);
 };
 
-// verify this part about running pending things
 Channel.prototype.close = function () {
   this.closed = true;
+  
   while (this.receivers.length > 0) {
     this.receivers.shift()().trampoline();
   }
@@ -103,13 +103,13 @@ var BufferedChannel = function (buffer) {
 };
 
 BufferedChannel.prototype = new Channel();
-
+// be sure to call all the listeners
 var buffered_recv = function (ch) {
   return monad (function (cont, fail) {
     var resume = function () {
       return ch.closed && ch.buffer.empty() ? fail (channel_closed) : cont (ch.buffer.deq());
     };
-    if (! ch.closed && ! ch.buffer.empty()) {
+    if (! ch.buffer.empty()) {
       return jump (resume);
     }
     ch.receivers.push(resume);
@@ -119,7 +119,10 @@ var buffered_recv = function (ch) {
     return jump (function () { return 'recv'; });
   });
 };
-
+/**
+ * remember to restart when the goroutine ends without
+ * having filled out the buffer.
+ */
 var buffered_send = function (ch, v) {
   return monad (function (cont, fail) {
     var resume= function () {
@@ -142,16 +145,6 @@ BufferedChannel.prototype.recv = function () {
 
 BufferedChannel.prototype.send = function (v) {
   return buffered_send (this, v);
-};
-
-BufferedChannel.prototype.close = function () {
-  this.closed = true;
-  while (this.receivers.length > 0) {
-    this.receivers.shift()().trampoline();
-  }
-  while (this.senders.length > 0) {
-    this.senders.shift()().trampoline();
-  }
 };
 
 var chan = function (size) {
