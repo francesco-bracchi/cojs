@@ -145,6 +145,19 @@ macro goexpr {
    *
    * The underlying logic is actually handled by the object `channel`.
    */
+
+  rule {
+    { recv $v:ident <- $x:expr or $y:expr or $chs ... ; $gs ... }
+  } => {
+    goexpr { recv $v <- ( $x ) . alt ( $y ) or $chs ... ; $gs ... }
+  }
+
+  rule {
+    { recv $v:ident <- $x:expr or $y:expr ; $gs ... }
+  } => {
+    goexpr { recv $v <- ( $x ) . alt ( $y ) ; $gs ... }
+  }
+
   rule {
     { recv $v:ident <- $ch:expr ; $gs ... }
   } => {
