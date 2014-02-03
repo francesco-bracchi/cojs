@@ -1,8 +1,8 @@
 'use strict';
 
-var async = require ('./src/index.js');
+var gozilla = require ('./src/index.js');
 
-// var m = 80000, n = 0, ch = async.chan(10);
+// var m = 80000, n = 0, ch = gozilla.chan(10);
 
 // go try {
 //   while (true) {
@@ -31,10 +31,10 @@ var async = require ('./src/index.js');
 //   ch.close();
 // }
   
-var c0 = async.chan(),
-    c1 = async.chan(),
-    c2 = async.chan(),
-    c3 = async.chan();
+var c0 = gozilla.chan(),
+    c1 = gozilla.chan(),
+    c2 = gozilla.chan(),
+    c3 = gozilla.chan();
 
 setTimeout (function () {
   console.log ('pre c0');

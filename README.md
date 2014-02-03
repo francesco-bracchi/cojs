@@ -1,4 +1,4 @@
-# Async js
+# Gozilla
 
 This Library is heavily inspired by 
 [clojure.core.async](http://clojure.com/blog/2013/06/28/clojure-core-async-channels.html).
@@ -16,9 +16,11 @@ rewrites go blocks, thanks to the power of [sweetjs](http://sweetjs.org/) macros
 
 # Install
 
-TBD
+    npm install sweetjs gozilla
 
 ## Use
+
+   sjs -m gozilla/macros <file>.js
 
 ## example  
 
@@ -56,40 +58,23 @@ TBD
     }
 
 
-## todo
+# TODO
 
-## features
+## features to be completed
 
-1. add switch
-1. add continue/break
-1. finally to the try catch block
+1. enable switch statement support in go expressions
+1. enable continue/break in go expressions
+1. enable finally clause in try expressions.
 
 ## Channels
 
-1. implement alt operation
 1. implement different buffer strategies
+
 ## Performance
 
 TBD
 
 ## Test
 
-TBD
-
-# install
-
-## Node
-
-TBD
-
-## requirejs
-
-TBD
-
-## google closure library
-
-TBD
-
-## Plain javascript
 
 TBD

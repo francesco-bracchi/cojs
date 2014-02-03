@@ -21,4 +21,4 @@ var global = (function () {
   return this;
 }).call(null);
 
-global.__async__ = module.exports;
+global.__gozilla__ = module.exports;

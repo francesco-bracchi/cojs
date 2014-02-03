@@ -10,14 +10,14 @@
  * ### gojs
  *
  * Wraps a javascript expression in a monad.
- * the js expression is wrapped in a function passed to  `__async__.exec'
+ * the js expression is wrapped in a function passed to  `__gozilla__.exec'
  * because it can handle correctly exceptions raised by the js code.
  */
 macro gojs {
   rule {
     { $e:expr }
   } => {
-    __async__ . exec ( function () { return $e ; } )
+    __gozilla__ . exec ( function () { return $e ; } )
   }
   rule {
     { $e:expr ; }
@@ -27,12 +27,12 @@ macro gojs {
   rule {
     { $e ... }
   } => {
-    __async__ . exec ( function () { $e ... } )
+    __gozilla__ . exec ( function () { $e ... } )
   }
   rule {
     $e:expr
   } => {
-    __async__ . exec ( function () { return $e ; } )
+    __gozilla__ . exec ( function () { return $e ; } )
   }
 }
 
@@ -45,7 +45,7 @@ macro gofail {
   rule {
     $e:expr
   } => {
-    __async__ . fail ( function () { return $e ; } )
+    __gozilla__ . fail ( function () { return $e ; } )
   }
 }
 
@@ -112,7 +112,7 @@ macro gotry {
  *
  * that is, call the method run on the monad.
  *
- * The nice things (I think) on this async method are (see README.md for
+ * The nice things (I think) on this gozilla method are (see README.md for
  * more)
  *
  * 1. The various routines are not coupled, (i.e. a routine do not have to
@@ -379,7 +379,7 @@ macro goexpr {
   rule {
     {}
   } => {
-    __async__ . undef
+    __gozilla__ . undef
   }
 }
 
