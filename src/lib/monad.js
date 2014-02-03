@@ -34,22 +34,14 @@ var ret = function (v) {
   });
 };
 
-// var failValue = function (e) {
-//   return monad (function (cont, fail) {
-//     return jump (function () {
-//       return fail (e);
-//     });
-//   });
-// };
-
 var exec = function (fun) {
   return monad (function (cont, fail) {
     return jump (function () {
-	try {
-	    return cont (fun());
-	} catch (e) {
-	    return fail (e);
-	}
+      try {
+	return cont (fun());
+      } catch (e) {
+	return fail (e);
+      }
     });
   });
 };
@@ -71,7 +63,7 @@ var bind = function (m, next) {
     return jump(function () {
       return m.action (function (v) {
 	return jump (function () {
-	  return next(v).action (cont, fail);
+          return next(v).action (cont, fail);
 	});
       }, fail);
     });
@@ -99,8 +91,8 @@ Monad.prototype.alt = function (fun) {
 };
 
 module.exports = {
-  monad: monad
-  ,ret: ret
-  ,fail: fail
-  ,exec: exec
+  monad: monad,
+  ret: ret,
+  fail: fail,
+  exec: exec
 };

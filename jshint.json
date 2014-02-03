@@ -1,0 +1,13 @@
+{
+  "strict": true,
+  "undef": true,
+  "unused": true,
+  "node": true,
+  "globals": {
+    "__gozilla__": true,
+    "go": true,
+    "recv" : true,
+    "send" : true,
+    "->" : true
+  }
+}

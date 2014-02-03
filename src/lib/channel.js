@@ -128,6 +128,8 @@ Channel.prototype.recv = function () {
  * it has to return immediately undefined).
  */
 Channel.prototype.close = function () {
+  if (this.closed) return;
+
   this.closed = true;
   
   while (this.receivers.length > 0) {
