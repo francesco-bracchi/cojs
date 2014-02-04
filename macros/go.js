@@ -301,9 +301,9 @@ macro goexpr {
   }
 
   rule {
-    { if ( $t:expr ) $e:expr ; $gs ... }
+    { if ( $t:expr ) $e ; $gs ... }
   } => {
-    goexpr { if ( $t ) { $e } else { undefined } $gs ... }
+    goexpr { if ( $t ) { $e ; } else { undefined } $gs ... }
   }
 
   rule {
@@ -444,6 +444,28 @@ macro go {
     for ( $h ... ) { $b ... }
   } => {
     go { for ( $h ... ) { $b ... } }
+  }
+  /** IF **/
+  rule {
+    if ( $t:expr ) { $l ... } else { $r ... } 
+  } => {
+    go { if ( $t ) { $l ... } else { $r ... } }
+  }
+  rule {
+    if ( $t:expr ) { $e ... } 
+  } => {
+    go { if ( $t ) { $e ... } }
+  }
+  rule {
+    if ( $t:expr ) $e ;
+  } => {
+    go { if ( $t ) $e ; }
+  }
+  
+  rule {
+    if ( $t:expr ) $e ... else $f:expr ;
+  } => {
+    go { if ( $t ) $e ... else $f ; }
   }
 }
 
