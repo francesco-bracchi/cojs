@@ -1,3 +1,4 @@
+var chan = require ('../lib/channel');
 
 var withChan = function (fun) {
   var ch = chan ();

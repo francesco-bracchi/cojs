@@ -1,7 +1,9 @@
+'use strict';
+
 var fs = require('fs'),
     utils = require ('./utils');
 
-slurp = function (path, options) {
+var slurp = function (path, options) {
   return util.withChan(function (ch) {
     fs.readFile (path, options, function (err, data) {
       go if (! err) {
@@ -10,6 +12,6 @@ slurp = function (path, options) {
       ch.close();
     });
   });
+};
 
-}
 module.exports = slurp;
