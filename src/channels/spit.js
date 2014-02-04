@@ -1,16 +1,15 @@
-var fs = require('fs');
+var fs = require('fs'),
+    utils = require ('./utils');
 
 var spit = function (path, data, options) {
-  var ch = channel();
-  fs.writeFile(path, data, options, function (err) {
-    go {
-      if (! err) {
+  return util.withChan(function (ch) {
+    fs.writeFile(path, data, options, function (err) {
+      go if (! err) {
         send true -> ch;
       }
       ch.close();
-    }
+    });
   });
-  return ch;
 };
 
-module.exports = slurp;
+module.exports = spit;

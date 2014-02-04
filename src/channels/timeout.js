@@ -1,16 +1,15 @@
 'use strict';
 
-var chan = require ('../lib/channel');
+var chan = require ('../lib/channel'),
+    utils = require ('./utils');
 
 var timeout = function (ms, val) {
-  var ch = chan ();
-  setTimeout (function () {
-    go { 
-      send val -> ch;
+  return util.withChan(function (ch) {
+    setTimeout (function () {
+      go send val -> ch;
       ch.close();
-    }
-  }, ms);
-  return ch;
+    }, ms);
+  });
 };
 
 module.exports = timeout;
