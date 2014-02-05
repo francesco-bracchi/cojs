@@ -3,21 +3,26 @@
 var gulp = require('gulp'),
     gutil = require ('gulp-util'),
     sweetjs = require('gulp-sweetjs'),
-    clean = require('gulp-clean');
+    clean = require('gulp-clean'),
+    frep = require ('gulp-frep');
 
-var codeFiles = ['**/*.js', '!node_modules/**', '!macros/**'];
+gulp.task('default', ['dist']);
 
-gulp.task ('runtime', function () {
+gulp.task ('runtime', ['macros'], function () {
   gulp
     .src("src/**/*.js")
-    .pipe(sweetjs({modules: ['./macros']}))
+    .pipe(sweetjs({modules: ['./dist/macros']}))
     .pipe(gulp.dest('dist'));
 });
 
 gulp.task ('macros', function () {
   gulp
-  .src("macros/*.js")
-  .pipe (gulp.dest('dist/macros'));
+    .src("macros/*.js")
+    .pipe (frep([{
+      pattern: /require(.*)/,
+      replacement: "require('gozilla')"
+    }]))
+    .pipe (gulp.dest('dist/macros'));
 });
 
 gulp.task ('package.json', function () {
@@ -26,12 +31,20 @@ gulp.task ('package.json', function () {
     .pipe(gulp.dest('dist'));
 });
 
+gulp.task ('dist', ['runtime', 'package.json']);
+
 gulp.task ('clean', function () {
   gulp
     .src ('dist', {read: false})
     .pipe (clean());
 });
 
-gulp.task('default', ['runtime', 'macros', 'package.json']);
+gulp.task ('local_install', ['dist'], function () {
+  gulp
+    .src ('dist/**/*.js')
+    .pipe(gulp.dest('node_modules/gozilla'));
+});
 
+gulp.task('test', ['local_install'], function () {
 
+});

@@ -16,9 +16,3 @@ module.exports = {
   ,exec: monad.exec
   ,undef: monad.ret (undefined)
 };
-
-var global = (function () {
-  return this;
-}).call(null);
-
-global.__gozilla__ = module.exports;

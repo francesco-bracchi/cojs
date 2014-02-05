@@ -4,12 +4,14 @@ var fs = require('fs'),
     utils = require ('./utils');
 
 var spit = function (path, data, options) {
-  return util.withChan(function (ch) {
+  return utils.withChan(function (ch) {
     fs.writeFile(path, data, options, function (err) {
-      go if (! err) {
-        send true -> ch;
+      go {
+        if (! err) {
+          send true -> ch;
+        }
+        ch.close();
       }
-      ch.close();
     });
   });
 };
