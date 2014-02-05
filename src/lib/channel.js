@@ -1,17 +1,17 @@
-/**
- * TODO:
- * 1. Implement Buffered channel
- * 2. Implement ch.close method
- * 3. Implement fancy buffers (dropfirst, droplast)
- * 4. Test, Test, Test
- */
+
+// TODO:
+// 1. Implement Buffered channel
+// 2. Implement ch.close method
+// 3. Implement fancy buffers (dropfirst, droplast)
+// 4. Test, Test, Test
 
 'use strict';
 
 var jump = require ('./jump.js'),
-    monad = require ('./monad.js').monad;
+    monad = require ('./monad.js').monad,
+    scheduler = require ('./scheduler.js');
 
-/** Channel Closed Error **/
+// Channel Closed Error
 var ChannelClosed = function (ch) {
   this.channel = ch;
   this.message = "Channel Closed";
@@ -21,7 +21,7 @@ var isClosed = function (ch) {
   return new ChannelClosed (ch);
 };
 
-/** Buffer **/
+// Buffer
 var Buffer = function (size) {
   this.size = size;
   this.data = new Array (size);
@@ -55,59 +55,101 @@ Buffer.prototype.full = function () {
   return this.isfull;
 };
 
-/**
- * ## Channel
- *
- * A channel is an object that implements the 2 methods 
- * `recv()` and `send(v)`.
- * 
- * These 2 methods returns a monad, (see `"./monad.js"`).
- *
- * Another important method is `close()`.
- */
+// ## Channel
+//
+// A channel is an object that implements the 2 methods 
+// `recv()` and `send(v)`.
+// 
+// These 2 methods returns a monad, (see `"./monad.js"`).
+//
+// Another important method is `close()`.
 
-/**
- * ### Unbuffered Channel
- *
- * Unbuffered channels suspend the routine on `recv` or `send` operations,
- * and tries to resume a routine suspended on the opposite operation.
- * For example the routine A calls `recv` and no routines are suspended 
- * on a `send` operation, the routine A gets suspended.
- *
- * At some point another routine B calls `send(v)` on the same channel.
- * Then the routine A is resumed, passing the value v to the continuation of A.
- *
- * When the routine A ends or gets suspended again, the routine B is resumed.
- */
+// ### Unbuffered Channel
+//
+// Unbuffered channels suspend the routine on `recv` or `send` operations,
+// and tries to resume a routine suspended on the opposite operation.
+// For example the routine A calls `recv` and no routines are suspended 
+// on a `send` operation, the routine A gets suspended.
+//
+// At some point another routine B calls `send(v)` on the same channel.
+// Then the routine A is resumed, passing the value v to the continuation of A.
+//
+// When the routine A ends or gets suspended again, the routine B is resumed.
+
 var Channel = function () {
   this.receivers = [];
   this.senders = [];
   this.closed = false;
 };
 
+// var recv = function (ch) {
+//   return monad (function (cont, fail) {
+//     ch.receivers.push (function (v) {
+//       return ch.closed ? fail (isClosed(ch)) : cont (v);
+//     });
+//     if (ch.senders.length > 0) {
+//       return jump(ch.senders.shift());
+//     }
+//     return jump (function () { return 'recv'; });
+//   });
+// };
+
+// var send = function (ch, v) {
+//   return monad (function (cont, fail) {
+//     ch.senders.push (function () {
+//       return ch.closed ? fail(isClosed(ch)) : cont();
+//     });
+//     if (ch.receivers.length > 0) {
+//       return jump (function () { 
+//         ch.receivers.shift()(v).trampoline();
+//         return cont();
+//       });
+//     }
+//     return jump (function () { return 'send'; });
+//   });
+// };
+
+var stop = jump(function () { 
+  return undefined;
+});
+
 var recv = function (ch) {
-  return monad (function (cont, fail) {
-    ch.receivers.push (function (v) {
-      return ch.closed ? fail (isClosed(ch)) : cont (v);
+  return monad (function (cont, fail, queue) {
+    ch.receivers.push (function (v, q) { 
+      return ch.closed ? fail (isClosed (ch), cont, q) : cont (v, fail, q); 
     });
     if (ch.senders.length > 0) {
-      return jump(ch.senders.shift());
+      var sender = ch.senders.shift();
+      queue.push (function (q) {
+        return jump(function () { 
+          return sender (undefined, q); 
+        });
+      });
     }
-    return jump (function () { return 'recv'; });
+    if (queue.length > 0) {
+      return queue.shift()(queue);
+    }
+    return stop;
   });
 };
 
 var send = function (ch, v) {
-  return monad (function (cont, fail) {
-    
-    ch.senders.push (function () {
-      return ch.closed ? fail(isClosed(ch)) : cont();
+  return monad (function (cont, fail, queue) {
+    ch.senders.push (function (v, q) {
+      return ch.closed ? fail (isClosed(ch), cont, q) : cont(v, fail, q);
     });
-
     if (ch.receivers.length > 0) {
-      return jump (function () { return ch.receivers.shift()(v); });
+      var receiver = ch.receivers.shift();
+      queue.push (function (q) {
+        return jump(function () { 
+          return receiver(v, q);
+        });
+      });
     }
-    return jump (function () { return 'send'; });
+    if (queue.length) {
+      return queue.shift()(queue);
+    }
+    return stop;
   });
 };
 
@@ -119,14 +161,13 @@ Channel.prototype.recv = function () {
   return recv (this);
 };
 
-/**
- * ### Close
- *
- * When an unbuffered channel is closed, all suspended operations are 
- * resumed, raising an error.
- * (To be decided: does the `recv` operation has to raise an error or 
- * it has to return immediately undefined).
- */
+// ### Close
+//
+// When an unbuffered channel is closed, all suspended operations are 
+// resumed, raising an error.
+// (To be decided: does the `recv` operation has to raise an error or 
+// it has to return immediately undefined).
+
 Channel.prototype.close = function () {
   if (this.closed) return;
 
@@ -140,16 +181,15 @@ Channel.prototype.close = function () {
   }
 };
 
-/**
- * ## Buffered Channels
- *
- * A buffered channel do not suspend itself one `recv` (`send`) operation 
- * until the buffer is full (empty).
- * 
- * Be careful with buffered channels, because when a routine ends without
- * having filled the buffer, and the channel is not closed, the messages are 
- * not delivered.
- */
+// ## Buffered Channels
+//
+// A buffered channel do not suspend itself one `recv` (`send`) operation 
+// until the buffer is full (empty).
+// 
+// Be careful with buffered channels, because when a routine ends without
+// having filled the buffer, and the channel is not closed, the messages are 
+// not delivered.
+
 var BufferedChannel = function (buffer) {
   Channel.call (this);
   this.buffer = buffer;
@@ -172,10 +212,10 @@ var buffered_recv = function (ch) {
     return jump (function () { return 'recv'; });
   });
 };
-/**
- * remember to restart when the goroutine ends without
- * having filled out the buffer.
- */
+
+// remember to restart when the goroutine ends without
+// having filled out the buffer.
+
 var buffered_send = function (ch, v) {
   return monad (function (cont, fail) {
     var resume= function () {
@@ -200,12 +240,11 @@ BufferedChannel.prototype.send = function (v) {
   return buffered_send (this, v);
 };
 
-/**
- * ## AltChannel 
- * 
- * AltChannel is the composition of 2 channels. the `recv` operation returns
- * the first of the 2 composing channels that has yield a value.
- */
+// ## AltChannel 
+// 
+// AltChannel is the composition of 2 channels. the `recv` operation returns
+// the first of the 2 composing channels that has yield a value.
+
 var AltChannel = function (c0, c1) {
   this.c0 = c0;
   this.c1 = c1;
@@ -239,24 +278,23 @@ var alt_recv = function (ch) {
   });
 };
 
-/**
- * This operation is implemented but not effective. 
- * 
- * The reason of this implementation if in the case of 3 or more channels
- * part of an AltChannel.
- * 
- * When a message from one of the channels resumes the current routine,
- * the other channels are not aware that the routine do not need a value any more,
- * therefore, the current routine is notified anyway of messaged from the 
- * other channels.
- * 
- * What the routine does in these cases is to resend the message on the channel
- * again, therefore can be consumed by another routine.
- *
- * But in case of combining more than 2 channels, one of the composed channels
- * will be an `AltChannel`, to which the message can be sent again, and the 
- * channel should be able to redirect to the right real channel.
- */
+// This operation is implemented but not effective. 
+// 
+// The reason of this implementation if in the case of 3 or more channels
+// part of an AltChannel.
+// 
+// When a message from one of the channels resumes the current routine,
+// the other channels are not aware that the routine do not need a value any more,
+// therefore, the current routine is notified anyway of messaged from the 
+// other channels.
+// 
+// What the routine does in these cases is to resend the message on the channel
+// again, therefore can be consumed by another routine.
+//
+// But in case of combining more than 2 channels, one of the composed channels
+// will be an `AltChannel`, to which the message can be sent again, and the 
+// channel should be able to redirect to the right real channel.
+
 AltChannel.prototype.send = function (v) {
   if (this.not_triggered) {
     return this.not_triggered.send (v);
@@ -268,27 +306,25 @@ Channel.prototype.alt = AltChannel.prototype.alt = function (c1) {
   return new AltChannel(this, c1);
 };
 
-/**
- * ## chan
- *
- * This function is the entry point of the module.
- *
- *     var ch = chan ();
- *
- * called in this variant creates an unbuffered channel
- *
- *     var ch = chan (10);
- *
- * in this way creates a channel with a buffer of length 10
- *
- *     var ch = chan(new chan.Buffer (10));
- * 
- * this is the same of the former. 
- *
- * You can pass as argument a Buffer instance. A buffer instance is an object 
- * that implements `enq` and `deq` methods.
- *
- */
+// ## chan
+//
+// This function is the entry point of the module.
+//
+//     var ch = chan ();
+//
+// called in this variant creates an unbuffered channel
+//
+//     var ch = chan (10);
+//
+// in this way creates a channel with a buffer of length 10
+//
+//     var ch = chan(new chan.Buffer (10));
+// 
+// this is the same of the former. 
+//
+// You can pass as argument a Buffer instance. A buffer instance is an object 
+// that implements `enq` and `deq` methods.
+
 var chan = function (size) {
   if (typeof size === 'number' && size > 0) {
     return chan (new Buffer (size));
@@ -302,8 +338,3 @@ var chan = function (size) {
 chan.Buffer = Buffer;
 
 module.exports = chan;
-
-// module.exports {
-//   chan: chan,
-//   Buffer: Buffer
-// }

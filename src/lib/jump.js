@@ -1,8 +1,7 @@
 
 'use strict';
-
-var Jump = function (f) {
-    this.bounce = f;
+var Jump = function (fn) {
+  this.bounce = fn;
 };
 
 var jump = function (fn) {
@@ -19,5 +18,15 @@ var trampoline = function (f) {
 Jump.prototype.trampoline = function () {
   return trampoline (this);
 };
+
+// var then = function (j, k) {
+//   return jump (function () {
+//     return j instanceof Jump ? then (j.bounce(), k) : k;
+//   });
+// };
+
+// Jump.prototype.then = function (j) {
+//   return then (this, j);
+// };
 
 module.exports = jump;
