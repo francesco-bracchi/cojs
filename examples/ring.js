@@ -1,3 +1,4 @@
+'use strict';
 var gozilla = require ('./src');
 
 var main = function (n0, m0) {
@@ -18,7 +19,6 @@ var main = function (n0, m0) {
         send k + 1 -> neighbor (j);
         m++;
       }
-      ch.close();
     }
     return ch;
   };
@@ -31,4 +31,19 @@ var main = function (n0, m0) {
 
 var n = 100000;
 
-main (n, 1000000 / n);
+var now = function () {
+  return (new Date()).getTime();
+};
+
+var printTime = function (fun, exp) {
+  var t0 = now();
+  var c = fun();
+  var t = now();
+  console.log (exp);
+  console.log ('time: ' + (t - t0) + 'ms');
+  return c;
+};
+
+printTime(function () {
+  main (n, 1000000 / n);
+});

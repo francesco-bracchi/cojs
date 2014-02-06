@@ -2,14 +2,13 @@
 
 // var m = 80000, n = 0, ch = gozilla.chan(10);
 
-// go try {
-//   while (true) {
-//     recv v <- ch;
-//     console.log ('received 1: ' + v);
-//   }
-// } catch (ex) {
-//   console.log (ex);
-// }
+go try {
+  while (true) {
+    console.log ('received');
+  }
+} catch (ex) {
+  console.log (ex);
+}
 
 // go try {
 //   while (true) {
