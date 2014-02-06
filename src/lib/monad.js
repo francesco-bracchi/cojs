@@ -10,11 +10,15 @@ var monad = function (fn) {
   return new Monad (fn);
 };
 
-var initial_continuation = function (v, fail, queue) {
+var initial_continuation = function (v, fail, active) {
+  if (active.length > 0) {
+    var next = active.shift();
+    return next(active);
+  }
   return v;
 };
 
-var initial_fail = function (e, cont, queue) {
+var initial_fail = function (e, cont, active) {
   throw e;
 };
 
@@ -23,57 +27,57 @@ Monad.prototype.run = function () {
 };
 
 var ret = function (v) {
-  return monad (function (cont, fail, queue) {
+  return monad (function (cont, fail, active) {
     return jump (function () {
-      return cont (v, fail, queue);
+      return cont (v, fail, active);
     });
   });
 };
 
 var exec = function (fun) {
-  return monad (function (cont, fail, queue) {
+  return monad (function (cont, fail, active) {
     return jump (function () {
       try {
-	return cont (fun(), fail, queue);
+	return cont (fun(), fail, active);
       } catch (e) {
-	return fail (e, cont, queue);
+	return fail (e, cont, active);
       }
     });
   });
 };
 
 var fail = function (fun) {
-  return monad (function (cont, fail, queue) {
+  return monad (function (cont, fail, active) {
     return jump (function () {
       try {
-        return fail (fun (), cont, queue);
+        return fail (fun (), cont, active);
       } catch (e) {
-        return fail (e, cont, queue);
+        return fail (e, cont, active);
       }
     });
   });
 };
 
 var bind = function (m, next) {
-  return monad (function (cont, fail, queue) {
+  return monad (function (cont, fail, active) {
     return jump(function () {
-      return m.action (function (v, fail1, queue1) {
+      return m.action (function (v, fail1, active1) {
 	return jump (function () {
-          return next(v).action (cont, fail1, queue1);
+          return next(v).action (cont, fail1, active1);
 	});
-      }, fail, queue);
+      }, fail, active);
     });
   });
 };
 
 var alt = function (m, handler) {
-  return monad (function (cont, fail, queue) {
+  return monad (function (cont, fail, active) {
     return jump(function () {
-      return m.action (cont, function (err, cont1, queue1) {
+      return m.action (cont, function (err, cont1, active1) {
         return jump (function () {
-          return handler(err).action (cont1, fail, queue1);
+          return handler(err).action (cont1, fail, active1);
         });
-      }, queue);
+      }, active);
     });
   });
 };

@@ -1,6 +1,6 @@
 var gozilla = require ('./src');
 
-var main = function (m0, n0) {
+var main = function (n0, m0) {
   var channels = [];
 
   var neighbor = function (j) {
@@ -11,12 +11,12 @@ var main = function (m0, n0) {
   var initChannel = function (j) {
     var ch = gozilla.chan(), 
         m = 0;
-
     go {
       while (m < m0) {
-        recv m <- ch;
-        console.log ('passing by ' + j + ' (' + m + ')');
-        send m + 1 -> neighbor (j);
+        recv k <- ch;
+        // console.log ('passing by ' + j + ' (' + k + ')');
+        send k + 1 -> neighbor (j);
+        m++;
       }
       ch.close();
     }
@@ -26,9 +26,9 @@ var main = function (m0, n0) {
   for (var j = 0; j < n0; j++) 
     channels[j] = initChannel (j);
   
-  var x = go send 0 -> channels[0] ;
-
-  console.log (channels);
+  var x = go send 0 -> channels[0];
 };
 
-main (10, 3);
+var n = 100000;
+
+main (n, 1000000 / n);

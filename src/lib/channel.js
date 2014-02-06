@@ -77,77 +77,65 @@ Buffer.prototype.full = function () {
 // When the routine A ends or gets suspended again, the routine B is resumed.
 
 var Channel = function () {
-  this.receivers = [];
-  this.senders = [];
+  this.suspend_recv = [];
+  this.suspend_send = [];
   this.closed = false;
 };
-
-// var recv = function (ch) {
-//   return monad (function (cont, fail) {
-//     ch.receivers.push (function (v) {
-//       return ch.closed ? fail (isClosed(ch)) : cont (v);
-//     });
-//     if (ch.senders.length > 0) {
-//       return jump(ch.senders.shift());
-//     }
-//     return jump (function () { return 'recv'; });
-//   });
-// };
-
-// var send = function (ch, v) {
-//   return monad (function (cont, fail) {
-//     ch.senders.push (function () {
-//       return ch.closed ? fail(isClosed(ch)) : cont();
-//     });
-//     if (ch.receivers.length > 0) {
-//       return jump (function () { 
-//         ch.receivers.shift()(v).trampoline();
-//         return cont();
-//       });
-//     }
-//     return jump (function () { return 'send'; });
-//   });
-// };
 
 var stop = jump(function () { 
   return undefined;
 });
 
 var recv = function (ch) {
-  return monad (function (cont, fail, queue) {
-    ch.receivers.push (function (v, q) { 
-      return ch.closed ? fail (isClosed (ch), cont, q) : cont (v, fail, q); 
-    });
-    if (ch.senders.length > 0) {
-      var sender = ch.senders.shift();
-      queue.push (function (q) {
-        return jump(function () { 
-          return sender (undefined, q); 
-        });
-      });
+  return monad(function (cont, fail, active) {
+    if (ch.closed) {
+      fail (new ChannelClosed (ch), cont, active);
     }
-    if (queue.length > 0) {
-      return queue.shift()(queue);
+
+    var receiver = function (v, a) {
+      if (ch.closed) {
+        return fail (new ChannelClosed (ch), cont, a);
+      }
+      return cont (v, fail, a);
+    };
+
+    ch.suspend_recv.push(receiver);
+
+    if (ch.suspend_send.length > 0) {
+      var sender = ch.suspend_send.shift();
+      active.push(sender);
+    }
+
+    if (active.length > 0) {
+      var next = active.shift();
+      return next (active);
     }
     return stop;
   });
 };
 
 var send = function (ch, v) {
-  return monad (function (cont, fail, queue) {
-    ch.senders.push (function (v, q) {
-      return ch.closed ? fail (isClosed(ch), cont, q) : cont(v, fail, q);
-    });
-    if (ch.receivers.length > 0) {
-      var receiver = ch.receivers.shift();
-      queue.push (function (q) {
-        return jump(function () { 
-          return receiver(v, q);
-        });
-      });
+  return monad(function (cont, fail, active) {
+    if (ch.closed) {
+      fail (new ChannelClosed(ch), cont, active);
     }
-    if (queue.length) {
-      return queue.shift()(queue);
+    if (ch.suspend_recv.length > 0) {
+      var receiver = ch.suspend_recv.shift();
+      active.push (function (a) { return cont (undefined, fail, a); });
+      return receiver(v, active);
+    }
+    ch.suspend_send.push (function (a) {
+      if (ch.closed) { 
+        return fail (new ChannelClosed(ch), cont, a);
+      }
+      var receiver = ch.suspend_recv.shift();
+      a.push(function (a1) { return cont (undefined, fail, a1); });
+      return receiver (v, a);
+    });
+    
+    if (active.length > 0) {
+      var next = active.shift();
+      return next (active);
     }
     return stop;
   });
@@ -173,12 +161,12 @@ Channel.prototype.close = function () {
 
   this.closed = true;
   
-  while (this.receivers.length > 0) {
-    this.receivers.shift()().trampoline();
-  }
-  while (this.senders.length > 0) {
-    this.senders.shift()().trampoline();
-  }
+  // while (this.receivers.length > 0) {
+  //   this.receivers.shift()().trampoline();
+  // }
+  // while (this.senders.length > 0) {
+  //   this.senders.shift()().trampoline();
+  // }
 };
 
 // ## Buffered Channels
