@@ -4,11 +4,12 @@ var c0 = gozilla.chan(),
     c1 = gozilla.chan();
 
 go {
-  var x = 0, y = 10;
-  while (true) {
+  var x = 0;
+  while (x < 100) {
     recv m <- c0;
     console.log ('ping ' + m);
     send m + 1 -> c1;
+    x = x + 1;
   }
   c0.close();
 }

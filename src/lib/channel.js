@@ -86,21 +86,18 @@ var stop = jump(function () {
   return undefined;
 });
 
+var make_receiver = function (ch, cont, fail) {
+  return function (v, a) {
+    return ch.closed ? fail(new ChannelClosed(ch), cont, a) : cont(v, fail, a);
+  };
+};
+
 var recv = function (ch) {
   return monad(function (cont, fail, active) {
     if (ch.closed) {
       fail (new ChannelClosed (ch), cont, active);
     }
-
-    var receiver = function (v, a) {
-      if (ch.closed) {
-        return fail (new ChannelClosed (ch), cont, a);
-      }
-      return cont (v, fail, a);
-    };
-
-    ch.suspend_recv.push(receiver);
-
+    ch.suspend_recv.push(make_receiver(ch, cont, fail));
     if (ch.suspend_send.length > 0) {
       var sender = ch.suspend_send.shift();
       active.push(sender);
@@ -114,6 +111,7 @@ var recv = function (ch) {
   });
 };
 
+// todo: simplify and clarify this mess
 var send = function (ch, v) {
   return monad(function (cont, fail, active) {
     if (ch.closed) {
