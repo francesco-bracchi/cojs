@@ -34,7 +34,7 @@ macro gojs {
   rule {
     ( $g ) { $e ... }
   } => {
-    _$g . exec ( function () { $e ... } )
+    $g . exec ( function () { $e ... } )
   }
   rule {
     ( $g ) $e:expr
@@ -217,7 +217,7 @@ macro goexpr {
   } => {
     ( function loop () {
       return goexpr ( $g) { $t } . bind ( function ( k ) {
-        return k ? goexpr ( $g ) { $b ... } . bind ( loop ) : goexpr ( $g ) { $gs ... } ; } )
+        return k ? goexpr ( $g ) { $b ... } . bind ( loop ) : goexpr ( $g ) { $gs ... } } )
     } () )
   }
   rule {
@@ -336,18 +336,17 @@ macro goexpr {
    * even fast enough
    */
   rule {
-    ( $g ) { var $a:ident = $e:expr (,) ... ; $gs ... }
+    ( $g ) { var $( $a:ident = $e:expr ) (,) ...  ; $gs ... }
   } => {
-    (function () {
-      var $a (,) ... ;
-      gojs ( $g ) { $a = $e (;) ... } goseq goexpr ( $g ) { $gs ... }
-    }());
+    (function ($a (,) ...) {
+      return  gojs ( $g ) { $($a = $e) (;) ... ; } goseq goexpr ( $g ) { $gs ... }
+    } () )
   }
 
   rule {
     ( $g ) { $v:ident = $e:expr ; $gs ... }
   } => {
-    gojs ( $g ) { $v = $e } goseq goexpr ( $g ) { $gs ... }
+    gojs ( $g ) { $v = $e; } goseq goexpr ( $g ) { $gs ... }
   }
 
   /**
@@ -411,7 +410,7 @@ macro go {
     { $e ... }
   } => {
     (function (async) {
-      return ( goexpr ( async ) { $e ... } ) . run ();
+      return  ( goexpr ( async ) { $e ... } ) . run ();
     }( _gozilla_ ) );
   }
   rule {

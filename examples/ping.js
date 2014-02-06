@@ -3,10 +3,8 @@ var gozilla = require ('./src');
 var c0 = gozilla.chan(),
     c1 = gozilla.chan();
 
-c0.label = 'c0';
-c1.label = 'c1';
-
 go {
+  var x = 0, y = 10;
   while (true) {
     recv m <- c0;
     console.log ('ping ' + m);
@@ -25,10 +23,3 @@ go {
 }
 
 go send 0 -> c0;
-
-
-// ch | susp_recv | susp_send 
-//  0       0          0          
-//  1       0          0     
-
-// active: 2
