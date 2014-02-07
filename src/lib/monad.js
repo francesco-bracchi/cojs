@@ -1,6 +1,6 @@
 'use strict';
 
-var jump = require ('./jump');
+var Jump = require ('./jump');
 
 var Monad = function (action) {
   this.action = action;
@@ -28,7 +28,7 @@ Monad.prototype.run = function () {
 
 var ret = function (v) {
   return monad (function (cont, fail, active) {
-    return jump (function () {
+    return new Jump (function () {
       return cont (v, fail, active);
     });
   });
@@ -36,7 +36,7 @@ var ret = function (v) {
 
 var exec = function (fun) {
   return monad (function (cont, fail, active) {
-    return jump (function () {
+    return new Jump (function () {
       try {
 	return cont (fun(), fail, active);
       } catch (e) {
@@ -48,7 +48,7 @@ var exec = function (fun) {
 
 var fail = function (fun) {
   return monad (function (cont, fail, active) {
-    return jump (function () {
+    return new Jump (function () {
       try {
         return fail (fun (), cont, active);
       } catch (e) {
@@ -60,25 +60,25 @@ var fail = function (fun) {
 
 var bind = function (m, next) {
   return monad (function (cont, fail, active) {
-    return jump(function () {
+    //return new Jump(function () {
       return m.action (function (v, fail1, active1) {
-	return jump (function () {
+	return new Jump (function () {
           return next(v).action (cont, fail1, active1);
 	});
       }, fail, active);
-    });
+    //});
   });
 };
 
 var alt = function (m, handler) {
   return monad (function (cont, fail, active) {
-    return jump(function () {
+    // return new Jump(function () {
       return m.action (cont, function (err, cont1, active1) {
-        return jump (function () {
+        return new Jump (function () {
           return handler(err).action (cont1, fail, active1);
         });
       }, active);
-    });
+    // });
   });
 };
 
@@ -92,6 +92,7 @@ Monad.prototype.alt = function (fun) {
 
 module.exports = {
   monad: monad,
+  Monad: Monad,
   ret: ret,
   fail: fail,
   exec: exec

@@ -7,8 +7,8 @@
 
 'use strict';
 
-var jump = require ('./jump.js'),
-    monad = require ('./monad.js').monad,
+var Jump = require ('./jump.js'),
+    Monad = require ('./monad.js').Monad,
     scheduler = require ('./scheduler.js');
 
 // Channel Closed Error
@@ -82,7 +82,7 @@ var Channel = function () {
   this.closed = false;
 };
 
-var stop = jump(function () { 
+var stop = new Jump(function () { 
   return undefined;
 });
 
@@ -93,7 +93,7 @@ var make_receiver = function (ch, cont, fail) {
 };
 
 var recv = function (ch) {
-  return monad(function (cont, fail, active) {
+  return new Monad(function (cont, fail, active) {
     if (ch.closed) {
       fail (new ChannelClosed (ch), cont, active);
     }
@@ -113,7 +113,7 @@ var recv = function (ch) {
 
 // todo: simplify and clarify this mess
 var send = function (ch, v) {
-  return monad(function (cont, fail, active) {
+  return new Monad(function (cont, fail, active) {
     if (ch.closed) {
       fail (new ChannelClosed(ch), cont, active);
     }
@@ -184,18 +184,18 @@ var BufferedChannel = function (buffer) {
 BufferedChannel.prototype = new Channel();
 // be sure to call all the listeners
 var buffered_recv = function (ch) {
-  return monad (function (cont, fail) {
+  return new Monad (function (cont, fail) {
     var resume = function () {
       return ch.closed && ch.buffer.empty() ? fail (isClosed(ch)) : cont (ch.buffer.deq());
     };
     if (! ch.buffer.empty()) {
-      return jump (resume);
+      return new Jump (resume);
     }
     ch.receivers.push(resume);
     if (ch.senders.length > 0) {
-      return jump(ch.senders.shift());
+      return new Jump(ch.senders.shift());
     }
-    return jump (function () { return 'recv'; });
+    return new Jump (function () { return 'recv'; });
   });
 };
 
@@ -203,18 +203,18 @@ var buffered_recv = function (ch) {
 // having filled out the buffer.
 
 var buffered_send = function (ch, v) {
-  return monad (function (cont, fail) {
+  return new Monad (function (cont, fail) {
     var resume= function () {
       return ch.closed ? fail (isClosed(ch)) : cont (ch.buffer.enq(v));
     };
     if (! ch.closed && ! ch.buffer.full()) {
-      return jump (resume);
+      return new Jump (resume);
     }
     ch.senders.push(resume);
     if (ch.receivers.length > 0) {
-      return jump (ch.receivers.shift());
+      return new Jump (ch.receivers.shift());
     }
-    return jump (function () { return 'send'; });
+    return new Jump (function () { return 'send'; });
   });
 };
 
@@ -241,7 +241,7 @@ AltChannel.prototype.recv = function () {
 };
 
 var alt_recv = function (ch) {
-  return monad(function (cont, fail) {
+  return new Monad(function (cont, fail) {
     var m0 = ch.c0.recv(),
         m1 = ch.c1.recv(),
         a0 = m0.action (function (v) {
@@ -260,7 +260,7 @@ var alt_recv = function (ch) {
         }, fail);
     a0.trampoline();
     a1.trampoline();
-    return jump(function () { return undefined; });
+    return new Jump(function () { return undefined; });
   });
 };
 
@@ -285,7 +285,7 @@ AltChannel.prototype.send = function (v) {
   if (this.not_triggered) {
     return this.not_triggered.send (v);
   }
-  return jump (function () { return undefined; });
+  return new Jump (function () { return undefined; });
 };
 
 Channel.prototype.alt = AltChannel.prototype.alt = function (c1) {
