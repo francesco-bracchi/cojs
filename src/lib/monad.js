@@ -23,20 +23,32 @@ var initial_fail = function (e, cont, active) {
 };
 
 Monad.prototype.run = function () {
-  return this.action (initial_continuation, initial_fail, []).trampoline();
+  var v = this.action (initial_continuation, initial_fail, []);
+  while (v instanceof Jump) {
+    v = v.bounce();
+  }
+  return v;
+};
+
+var cheney = function (fun) {
+  try {
+    return fun();
+  } catch (e) {
+    return new Jump(fun);
+  }
 };
 
 var ret = function (v) {
-  return monad (function (cont, fail, active) {
-    return new Jump (function () {
+  return new Monad (function (cont, fail, active) {
+    return cheney(function () {
       return cont (v, fail, active);
     });
   });
 };
 
 var exec = function (fun) {
-  return monad (function (cont, fail, active) {
-    return new Jump (function () {
+  return new Monad (function (cont, fail, active) {
+    return cheney(function () {
       try {
 	return cont (fun(), fail, active);
       } catch (e) {
@@ -47,8 +59,8 @@ var exec = function (fun) {
 };
 
 var fail = function (fun) {
-  return monad (function (cont, fail, active) {
-    return new Jump (function () {
+  return new Monad (function (cont, fail, active) {
+    return cheney(function () {
       try {
         return fail (fun (), cont, active);
       } catch (e) {
@@ -58,27 +70,24 @@ var fail = function (fun) {
   });
 };
 
+var r = 0;
 var bind = function (m, next) {
-  return monad (function (cont, fail, active) {
-    //return new Jump(function () {
-      return m.action (function (v, fail1, active1) {
-	return new Jump (function () {
-          return next(v).action (cont, fail1, active1);
-	});
-      }, fail, active);
-    //});
+  return new Monad (function (cont, fail, active) {
+    return m.action (function (v, fail1, active1) {
+      return cheney(function () { 
+        return next(v).action (cont, fail1, active1); 
+      });
+    }, fail, active);
   });
 };
 
 var alt = function (m, handler) {
   return monad (function (cont, fail, active) {
-    // return new Jump(function () {
-      return m.action (cont, function (err, cont1, active1) {
-        return new Jump (function () {
-          return handler(err).action (cont1, fail, active1);
-        });
-      }, active);
-    // });
+    return m.action (cont, function (err, cont1, active1) {
+      return cheney(function () {
+        return handler(err).action (cont1, fail, active1);
+      });
+    }, active);
   });
 };
 
@@ -91,7 +100,7 @@ Monad.prototype.alt = function (fun) {
 };
 
 module.exports = {
-  monad: monad,
+  /* monad: monad, */
   Monad: Monad,
   ret: ret,
   fail: fail,

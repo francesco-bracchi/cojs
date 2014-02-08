@@ -82,8 +82,8 @@ var Channel = function () {
   this.closed = false;
 };
 
-var stop = new Jump(function () { 
-  return undefined;
+var stop = new Jump (function () { 
+  return 'stop';
 });
 
 var make_receiver = function (ch, cont, fail) {
