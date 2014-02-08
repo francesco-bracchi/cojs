@@ -1,4 +1,3 @@
-
 // TODO:
 // 1. Implement Buffered channel
 // 2. Implement ch.close method
@@ -8,8 +7,8 @@
 'use strict';
 
 var Jump = require ('./jump.js'),
-    Monad = require ('./monad.js').Monad,
-    scheduler = require ('./scheduler.js');
+    Queue = require ('./queue.js'),
+    Monad = require ('./monad.js').Monad;
 
 // Channel Closed Error
 var ChannelClosed = function (ch) {
@@ -77,8 +76,8 @@ Buffer.prototype.full = function () {
 // When the routine A ends or gets suspended again, the routine B is resumed.
 
 var Channel = function () {
-  this.suspend_recv = [];
-  this.suspend_send = [];
+  this.suspend_recv = new Queue();
+  this.suspend_send = new Queue();
   this.closed = false;
 };
 
@@ -87,55 +86,54 @@ var stop = new Jump (function () {
 });
 
 var make_receiver = function (ch, cont, fail) {
-  return function (v, a) {
-    return ch.closed ? fail(new ChannelClosed(ch), cont, a) : cont(v, fail, a);
+  return function (v, s) {
+    return ch.closed ? fail(new ChannelClosed(ch), cont, s) : cont(v, fail, s);
   };
 };
 
 var recv = function (ch) {
-  return new Monad(function (cont, fail, active) {
+  return new Monad(function (cont, fail, scheduler) {
     if (ch.closed) {
-      fail (new ChannelClosed (ch), cont, active);
+      fail (new ChannelClosed (ch), cont, scheduler);
     }
-    ch.suspend_recv.push(make_receiver(ch, cont, fail));
-    if (ch.suspend_send.length > 0) {
-      var sender = ch.suspend_send.shift();
-      active.push(sender);
+    ch.suspend_recv.enq(make_receiver(ch, cont, fail));
+    if (! ch.suspend_send.empty()) {
+      var sender = ch.suspend_send.deq();
+      scheduler.enq(sender);
     }
-
-    if (active.length > 0) {
-      var next = active.shift();
-      return next (active);
+    if (scheduler.empty()) {
+      return stop;
     }
-    return stop;
+    var next = scheduler.deq();
+    return next (scheduler);
   });
 };
 
 // todo: simplify and clarify this mess
 var send = function (ch, v) {
-  return new Monad(function (cont, fail, active) {
+  return new Monad(function (cont, fail, scheduler) {
     if (ch.closed) {
-      fail (new ChannelClosed(ch), cont, active);
+      fail (new ChannelClosed(ch), cont, scheduler);
     }
-    if (ch.suspend_recv.length > 0) {
-      var receiver = ch.suspend_recv.shift();
-      active.push (function (a) { return cont (undefined, fail, a); });
-      return receiver(v, active);
+    if (! ch.suspend_recv.empty()) {
+      var receiver = ch.suspend_recv.deq();
+      scheduler.enq (function (s) { return cont (undefined, fail, s); });
+      return receiver(v, scheduler);
     }
-    ch.suspend_send.push (function (a) {
+    ch.suspend_send.enq (function (s) {
       if (ch.closed) { 
-        return fail (new ChannelClosed(ch), cont, a);
+        return fail (new ChannelClosed(ch), cont, s);
       }
-      var receiver = ch.suspend_recv.shift();
-      a.push(function (a1) { return cont (undefined, fail, a1); });
-      return receiver (v, a);
+      var receiver = ch.suspend_recv.deq();
+      s.enq(function (s) { return cont (undefined, fail, s); });
+      return receiver (v, s);
     });
     
-    if (active.length > 0) {
-      var next = active.shift();
-      return next (active);
+    if (scheduler.empty()) {
+      return stop;
     }
-    return stop;
+    var next = scheduler.deq();
+    return next (scheduler);
   });
 };
 
@@ -160,10 +158,10 @@ Channel.prototype.close = function () {
   this.closed = true;
   
   // while (this.receivers.length > 0) {
-  //   this.receivers.shift()().trampoline();
+  //   this.receivers.deq()().trampoline();
   // }
   // while (this.senders.length > 0) {
-  //   this.senders.shift()().trampoline();
+  //   this.senders.deq()().trampoline();
   // }
 };
 
@@ -191,9 +189,9 @@ var buffered_recv = function (ch) {
     if (! ch.buffer.empty()) {
       return new Jump (resume);
     }
-    ch.receivers.push(resume);
+    ch.receivers.enq(resume);
     if (ch.senders.length > 0) {
-      return new Jump(ch.senders.shift());
+      return new Jump(ch.senders.deq());
     }
     return new Jump (function () { return 'recv'; });
   });
@@ -210,9 +208,9 @@ var buffered_send = function (ch, v) {
     if (! ch.closed && ! ch.buffer.full()) {
       return new Jump (resume);
     }
-    ch.senders.push(resume);
+    ch.senders.enq(resume);
     if (ch.receivers.length > 0) {
-      return new Jump (ch.receivers.shift());
+      return new Jump (ch.receivers.deq());
     }
     return new Jump (function () { return 'send'; });
   });

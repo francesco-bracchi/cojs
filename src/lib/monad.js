@@ -1,93 +1,81 @@
 'use strict';
 
-var Jump = require ('./jump');
+var Jump = require ('./jump'),
+    Queue = require ('./queue');
 
 var Monad = function (action) {
   this.action = action;
 };
 
-var monad = function (fn) {
-  return new Monad (fn);
-};
-
-var initial_continuation = function (v, fail, active) {
-  if (active.length > 0) {
-    var next = active.shift();
-    return next(active);
+var initial_continuation = function (v, fail, scheduler) {
+  if (scheduler.empty()) {
+    return v;
   }
-  return v;
+  var next = scheduler.deq();
+  return next(scheduler);
 };
 
-var initial_fail = function (e, cont, active) {
+var initial_fail = function (e, cont, scheduler) {
   throw e;
 };
 
 Monad.prototype.run = function () {
-  var v = this.action (initial_continuation, initial_fail, []);
+  var v = this.action (initial_continuation, initial_fail, new Queue());
   while (v instanceof Jump) {
     v = v.bounce();
   }
   return v;
 };
 
-var cheney = function (fun) {
-  try {
-    return fun();
-  } catch (e) {
-    return new Jump(fun);
-  }
-};
-
 var ret = function (v) {
-  return new Monad (function (cont, fail, active) {
-    return cheney(function () {
-      return cont (v, fail, active);
+  return new Monad (function (cont, fail, scheduler) {
+    return new Jump(function () {
+      return cont (v, fail, scheduler);
     });
   });
 };
 
 var exec = function (fun) {
-  return new Monad (function (cont, fail, active) {
-    return cheney(function () {
+  return new Monad (function (cont, fail, scheduler) {
+    return new Jump(function () {
       try {
-	return cont (fun(), fail, active);
+	return cont (fun(), fail, scheduler);
       } catch (e) {
-	return fail (e, cont, active);
+	return fail (e, cont, scheduler);
       }
     });
   });
 };
 
 var fail = function (fun) {
-  return new Monad (function (cont, fail, active) {
-    return cheney(function () {
+  return new Monad (function (cont, fail, scheduler) {
+    return new Jump(function () {
       try {
-        return fail (fun (), cont, active);
+        return fail (fun (), cont, scheduler);
       } catch (e) {
-        return fail (e, cont, active);
+        return fail (e, cont, scheduler);
       }
     });
   });
 };
 
-var r = 0;
 var bind = function (m, next) {
-  return new Monad (function (cont, fail, active) {
-    return m.action (function (v, fail1, active1) {
-      return cheney(function () { 
-        return next(v).action (cont, fail1, active1); 
+  return new Monad (function (cont, fail, scheduler) {
+    return m.action (function (v, fail1, scheduler1) {
+      return new Jump(function () { 
+        return next(v).action(cont, fail1, scheduler1); 
       });
-    }, fail, active);
+    }, fail, scheduler);
   });
 };
 
 var alt = function (m, handler) {
-  return monad (function (cont, fail, active) {
-    return m.action (cont, function (err, cont1, active1) {
-      return cheney(function () {
-        return handler(err).action (cont1, fail, active1);
+  return new Monad (function (cont, fail, scheduler) {
+    return m.action(cont, function (err, cont1, scheduler1) {
+      return new Jump(function () {
+        return handler(err).action (cont1, fail, scheduler1);
       });
-    }, active);
+    }, scheduler);
   });
 };
 

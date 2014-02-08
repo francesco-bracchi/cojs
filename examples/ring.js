@@ -28,7 +28,7 @@ var main = function (n0, m0) {
     go {
       while (m < m0) {
         recv k <- ch;
-        // console.log ('message:' + m);
+        // console.log ('process: ' + j + ', message: ' + m);
         send k -> neighbor (j);
         m++;
       }
