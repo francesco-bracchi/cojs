@@ -1,7 +1,7 @@
 'use strict';
 
 var Jump = require ('./jump'),
-    Queue = require ('./queue');
+    UnlimitedBuffer = require ('./linkedListBuffer');
 
 var Monad = function (action) {
   this.action = action;
@@ -20,43 +20,13 @@ var initial_fail = function (e, cont, scheduler) {
 };
 
 Monad.prototype.run = function () {
-  var v = this.action (initial_continuation, initial_fail, new Queue());
+  var v = this.action (initial_continuation, 
+                       initial_fail, 
+                       new UnlimitedBuffer());
   while (v instanceof Jump) {
     v = v.bounce();
   }
   return v;
-};
-
-var ret = function (v) {
-  return new Monad (function (cont, fail, scheduler) {
-    return new Jump(function () {
-      return cont (v, fail, scheduler);
-    });
-  });
-};
-
-var exec = function (fun) {
-  return new Monad (function (cont, fail, scheduler) {
-    return new Jump(function () {
-      try {
-	return cont (fun(), fail, scheduler);
-      } catch (e) {
-	return fail (e, cont, scheduler);
-      }
-    });
-  });
-};
-
-var fail = function (fun) {
-  return new Monad (function (cont, fail, scheduler) {
-    return new Jump(function () {
-      try {
-        return fail (fun (), cont, scheduler);
-      } catch (e) {
-        return fail (e, cont, scheduler);
-      }
-    });
-  });
 };
 
 var bind = function (m, next) {
@@ -87,10 +57,4 @@ Monad.prototype.alt = function (fun) {
   return alt (this, fun);
 };
 
-module.exports = {
-  /* monad: monad, */
-  Monad: Monad,
-  ret: ret,
-  fail: fail,
-  exec: exec
-};
+module.exports = Monad;

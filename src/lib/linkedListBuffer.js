@@ -3,16 +3,17 @@ var Pair = function (head, tail) {
   this.cdr = tail;
 }
 
-var Queue = function () {
+var LinkedListBuffer = function () {
   this.head = undefined;
   this.tail = undefined;
+  this.size = 0;
 };
 
-Queue.prototype.empty = function () {
+LinkedListBuffer.prototype.empty = function () {
   return this.tail === undefined;
 };
 
-Queue.prototype.enq = function (e) {
+LinkedListBuffer.prototype.enq = function (e) {
   var p = new Pair(e);
   if (this.tail) {
     this.tail.cdr = p;
@@ -21,9 +22,10 @@ Queue.prototype.enq = function (e) {
   else {
     this.head = this.tail = p;
   }
+  this.size++;
 };
 
-Queue.prototype.deq = function () {
+LinkedListBuffer.prototype.deq = function () {
   if (this.head === undefined) return undefined;
   var res = this.head.car;
   if (this.head === this.tail) {
@@ -32,7 +34,8 @@ Queue.prototype.deq = function () {
   else {
     this.head = this.head.cdr;
   }
+  this.size--;
   return res;
 };
 
-module.exports = Queue;
+module.exports = LinkedListBuffer;

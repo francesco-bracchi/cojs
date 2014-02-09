@@ -4,6 +4,7 @@ var gulp = require('gulp'),
     gutil = require ('gulp-util'),
     sweetjs = require('gulp-sweetjs'),
     clean = require('gulp-clean'),
+    docco = require ('gulp-docco'),
     frep = require ('gulp-frep');
 
 gulp.task('default', ['dist']);
@@ -45,6 +46,12 @@ gulp.task ('local_install', ['dist'], function () {
     .pipe(gulp.dest('node_modules/gozilla'));
 });
 
+gulp.task ('docs', function () {
+  gulp
+    .src(['src/lib/*.js', 'macros/*.js'])
+    .pipe (docco())
+    .pipe (gulp.dest('dist/docs'));
+});
 gulp.task('test', ['local_install'], function () {
 
 });

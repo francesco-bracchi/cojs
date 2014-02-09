@@ -6,7 +6,7 @@
  * it according to the go semantic.
  */
 
-macro _gozilla_ {
+macro core {
   rule {
   } => {
     require ( './src' )
@@ -17,14 +17,14 @@ macro _gozilla_ {
  * ### gojs
  *
  * Wraps a javascript expression in a monad.
- * the js expression is wrapped in a function passed to  `__gozilla__.exec'
+ * the js expression is wrapped in a function passed to  `_core_.ret'
  * because it can handle correctly exceptions raised by the js code.
  */
 macro gojs {
   rule {
     ( $g ) { $e:expr }
   } => {
-    $g . exec ( function () { return $e ; } )
+    $g . ret ( function () { return $e ; } )
   }
   rule {
     ( $g ) { $e:expr ; }
@@ -34,12 +34,12 @@ macro gojs {
   rule {
     ( $g ) { $e ... }
   } => {
-    $g . exec ( function () { $e ... } )
+    $g . ret ( function () { $e ... } )
   }
   rule {
     ( $g ) $e:expr
   } => {
-    $g . exec ( function () { return $e ; } )
+    $g . ret ( function () { return $e ; } )
   }
 }
 
@@ -411,7 +411,7 @@ macro go {
   } => {
     (function (async) {
       return  ( goexpr ( async ) { $e ... } ) . run ();
-    }( _gozilla_ ) );
+    }( core ) );
   }
   rule {
     while ( $t:expr ) { $b ... }

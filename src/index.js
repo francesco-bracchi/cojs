@@ -1,18 +1,20 @@
-var chan = require ('./lib/channel'),
-    monad = require ('./lib/monad'),
-    jump = require ('./lib/jump');
+// var chan = require ('./lib/channel'),
+//     monad = require ('./lib/monad'),
+//     jump = require ('./lib/jump');
 
-module.exports = {
-  // jump
-  jump: jump
+// module.exports = {
+//   // jump
+//   jump: jump
 
-  // channel
-  ,chan: chan
+//   // channel
+//   ,chan: chan
 
-  // monad
-  ,monad: monad.monad
-  ,ret: monad.ret
-  ,fail: monad.fail
-  ,exec: monad.exec
-  ,undef: monad.ret (undefined)
-};
+//   // monad
+//   ,monad: monad.monad
+//   ,ret: monad.ret
+//   ,fail: monad.fail
+//   ,exec: monad.exec
+//   ,undef: monad.ret (undefined)
+// };
+
+module.exports = require ('./lib/core');
