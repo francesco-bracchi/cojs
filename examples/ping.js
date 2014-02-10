@@ -1,7 +1,9 @@
-var gozilla = require ('./src');
+// does ping/pong between 2 processes 100 times
 
-var c0 = gozilla.chan(),
-    c1 = gozilla.chan();
+var chan = require ('./src/chan');
+
+var c0 = chan(),
+    c1 = chan();
 
 go {
   var x = 0;

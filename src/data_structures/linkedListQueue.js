@@ -1,19 +1,19 @@
+// Classical minimalistic Linked List Queue of indefinite length
 var Pair = function (head, tail) {
   this.car = head;
   this.cdr = tail;
 }
 
-var LinkedListBuffer = function () {
+var LinkedListQueue = function () {
   this.head = undefined;
   this.tail = undefined;
-  this.size = 0;
 };
 
-LinkedListBuffer.prototype.empty = function () {
+LinkedListQueue.prototype.empty = function () {
   return this.tail === undefined;
 };
 
-LinkedListBuffer.prototype.enq = function (e) {
+LinkedListQueue.prototype.enq = function (e) {
   var p = new Pair(e);
   if (this.tail) {
     this.tail.cdr = p;
@@ -22,10 +22,9 @@ LinkedListBuffer.prototype.enq = function (e) {
   else {
     this.head = this.tail = p;
   }
-  this.size++;
 };
 
-LinkedListBuffer.prototype.deq = function () {
+LinkedListQueue.prototype.deq = function () {
   if (this.head === undefined) return undefined;
   var res = this.head.car;
   if (this.head === this.tail) {
@@ -34,8 +33,7 @@ LinkedListBuffer.prototype.deq = function () {
   else {
     this.head = this.head.cdr;
   }
-  this.size--;
   return res;
 };
 
-module.exports = LinkedListBuffer;
+module.exports = LinkedListQueue;

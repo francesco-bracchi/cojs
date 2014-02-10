@@ -4,10 +4,9 @@
 // Be careful with buffered channels, because when a routine ends without
 // having filled the buffer, and the channel is not closed, the messages are 
 // not delivered.
-var UnlimitedBuffer = require ('./linkedListBuffer'),
-    Jump = require ('./jump'),
-    Buffer = require('./circularBuffer'),
-    Monad = require ('./monad.js');
+var Queue  = require ('./data_structures/linkedListQueue'),
+    Jump   = require ('./jump'),
+    Monad  = require ('./monad');
 
 // ### Channel Closed Error
 var ChannelClosed = function (ch) {
@@ -18,8 +17,8 @@ var ChannelClosed = function (ch) {
 //### Constructor
 var Channel = function (buffer) {
   this.buffer = buffer;
-  this.suspend_recv = new UnlimitedBuffer();
-  this.suspend_send = new UnlimitedBuffer();
+  this.suspend_recv = new Queue();
+  this.suspend_send = new Queue();
   this.closed = false;
 };
 
@@ -38,6 +37,9 @@ var make_receiver = function (ch, cont, fail) {
   };
 };
 
+// ### Receive
+//
+// Builds the receive action on a channel `ch`
 var recv = function (ch) {
   return new Monad (function (cont, fail, scheduler) {
     // if channel is closed && buffer is empty raise an exception
@@ -111,7 +113,6 @@ var send = function (ch, v) {
       s.enq(function (s) { return cont (undefined, fail, s); });
       return receiver (s);
     });
-
     // then tries to resume some active process from `scheduler`
     if (scheduler.empty()) {
       return suspend;
@@ -139,11 +140,11 @@ Channel.prototype.close = function () {
   this.closed = true;
   while (! this.suspend_send.empty()) {
     var sender = this.suspend_send.deq();
-    sender (new UnlimitedBuffer()).run();
+    sender (new Queue()).run();
   }
   while (! this.suspend_recv.empty()) {
     var receiver = this.suspend_recv.deq();
-    receiver(undefined, new UnlimitedBuffer()).run();
+    receiver(undefined, new Queue()).run();
   }
 };
 

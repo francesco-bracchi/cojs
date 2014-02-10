@@ -1,6 +1,10 @@
+// classical ring example.
+// the app is configured in a ring of processes and a message 
+// that is run in the circle.
+
 'use strict';
 
-var gozilla = require ('./src');
+var chan = require ('./src/chan');
 
 var now = function () {
   return (new Date()).getTime();
@@ -23,7 +27,7 @@ var main = function (n0, m0) {
   };
   
   var initChannel = function (j) {
-    var ch = gozilla.chan(), 
+    var ch = chan(), 
         m = 0;
     go {
       while (m < m0) {

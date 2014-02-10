@@ -16,8 +16,8 @@
 'use strict';
 
 var Jump = require ('./jump'),
-    UnlimitedBuffer = require ('./linkedListBuffer'),
-    Monad = require ('./monad.js');
+    Queue = require ('./data_structures/linkedListQueue'),
+    Monad = require ('./monad');
 
 // ### Channel Closed Error
 var ChannelClosed = function (ch) {
@@ -27,8 +27,8 @@ var ChannelClosed = function (ch) {
 
 // ### Constructor
 var Channel = function () {
-  this.suspend_recv = new UnlimitedBuffer();
-  this.suspend_send = new UnlimitedBuffer();
+  this.suspend_recv = new Queue();
+  this.suspend_send = new Queue();
   this.closed = false;
 };
 
@@ -128,11 +128,11 @@ Channel.prototype.close = function () {
   this.closed = true;
   while (! this.suspend_send.empty()) {
     var sender = this.suspend_send.deq();
-    sender (new UnlimitedBuffer()).run();
+    sender (new Queue()).run();
   }
   while (! this.suspend_recv.empty()) {
     var receiver = this.suspend_recv.deq();
-    receiver(undefined, new UnlimitedBuffer()).run();
+    receiver(undefined, new Queue()).run();
   }
 };
 

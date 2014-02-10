@@ -14,7 +14,7 @@ gulp.task ('macros', function () {
     .src("macros/*.js")
     .pipe (frep([{
       pattern: /require(.*)/,
-      replacement: "require('gozilla')"
+      replacement: "require('gozilla/core')"
     }]))
     .pipe (gulp.dest('dist/macros'));
 });
@@ -46,19 +46,42 @@ gulp.task ('local_install', ['dist'], function () {
     .pipe(gulp.dest('node_modules/gozilla'));
 });
 
-gulp.task ('docs', function () {
+gulp.task ('docs/macros', function () {
   gulp
-    .src(['src/lib/*.js', 'macros/*.js'])
+    .src('macros/*.js')
     .pipe (docco())
-    .pipe (gulp.dest('dist/docs'));
+    .pipe (gulp.dest('dist/macros'));
 });
+
+gulp.task ('docs/main', function () {
+  gulp
+    .src('src/*.js')
+    .pipe (docco())
+    .pipe (gulp.dest('dist/docs/src'));
+});
+
+gulp.task ('docs/data_structures', function () {
+  gulp
+    .src('src/data_structures/*.js')
+    .pipe (docco())
+    .pipe (gulp.dest('dist/docs/src/data_structures'));
+});
+
+gulp.task ('docs/channels', function () {
+  gulp
+    .src('src/channels/*.js')
+    .pipe (docco())
+    .pipe (gulp.dest('dist/docs/src/channels'));
+});
+
+gulp.task('docs', ['docs/macros', 'docs/main', 'docs/channels', 'docs/data_structures']);
 
 gulp.task('examples', ['local_install'], function () {
   gulp
     .src("examples/**/*.js")
     .pipe (frep([{
       pattern: /require(.*)/,
-      replacement: "require('gozilla')"
+      replacement: "require('gozilla/chan')"
     }]))
     .pipe(sweetjs({modules: ['gozilla/macros']}))
     .pipe(gulp.dest ('dist/examples'));

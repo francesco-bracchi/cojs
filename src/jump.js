@@ -1,7 +1,5 @@
-// A `Jump` object is used to implement a **trampoline**  strategy.
-// a Jump object implement the `trampoline` method, that calls 
-// the jump argument until it is different from a `Jump`, that's 
-// the value.
+// A `Jump` object is used to implement the **trampoline**  strategy.
+// see: [trampoline on wikipedia](https://en.wikipedia.org/wiki/Trampoline_%28computers%29#High_level_programming)
 
 'use strict';
 

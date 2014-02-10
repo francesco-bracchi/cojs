@@ -1,10 +1,10 @@
 'use strict';
 
 var fs = require('fs'),
-    utils = require ('./utils');
+    withChan = require ('./with_chan');
 
 var slurp = function (path, options) {
-  return utils.withChan(function (ch) {
+  return withChan(function (ch) {
     fs.readFile (path, options, function (err, data) {
       go {
         if (! err) {

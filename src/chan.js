@@ -1,5 +1,6 @@
 // This function is the entry point of the module.
 //
+//     var chan = require('gozilla/chan');
 //     var ch = chan ();
 //
 // called in this variant creates an unbuffered channel
@@ -7,10 +8,10 @@
 //     var ch = chan (10);
 //
 // You can pass as argument a Buffer instance. A buffer instance is an object 
-// that implements `enq` and `deq` methods.
+// that implements `enq` and `deq` `full` and `empty` methods. 
 
 var BufferedChannel = require ('./bufferedChannel'),
-    Buffer = require ('./circularBuffer'),
+    Buffer = require ('./data_structures/circularQueue'),
     UnbufferedChannel = require ('./unbufferedChannel');
 
 // ### create 

@@ -1,9 +1,9 @@
 'use strict';
 
-var utils = require ('./utils');
+var withChan = require ('./with_chan');
 
 var timeout = function (ms, val) {
-  return utils.withChan (function (ch) {
+  return withChan (function (ch) {
     setTimeout (function () {
       go {
         send val -> ch;

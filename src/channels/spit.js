@@ -1,10 +1,10 @@
 'use strict';
 
 var fs = require('fs'),
-    utils = require ('./utils');
+    withChan = require ('./with_chan');
 
 var spit = function (path, data, options) {
-  return utils.withChan(function (ch) {
+  return withChan(function (ch) {
     fs.writeFile(path, data, options, function (err) {
       go {
         if (! err) {

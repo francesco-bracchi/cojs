@@ -1,4 +1,5 @@
-var CircularBuffer = function (size) {
+// Classical simple circular queue of fixed size
+var CircularQueue = function (size) {
   this.size = size;
   this.data = new Array (size);
   this.front = 0;
@@ -6,16 +7,16 @@ var CircularBuffer = function (size) {
   this.isfull = false;
 };
 
-CircularBuffer.prototype.enq = function (v) {
+CircularQueue.prototype.enq = function (v) {
   if (this.isfull) {
-    throw new Error ('buffer is full');
+    throw new Error ('queue is full');
   }
   this.front = ++ this.front % this.size;
   this.data[this.front] = v;
   this.isfull = this.front == this.rear;
 };
 
-CircularBuffer.prototype.deq = function () {
+CircularQueue.prototype.deq = function () {
   if (this.isfull) {
     this.isfull = false;
   }
@@ -23,12 +24,12 @@ CircularBuffer.prototype.deq = function () {
   return this.data [this.rear];
 };
 
-CircularBuffer.prototype.empty = function () {
+CircularQueue.prototype.empty = function () {
   return this.front == this.rear && !this.isfull;
 };
 
-CircularBuffer.prototype.full = function () {
+CircularQueue.prototype.full = function () {
   return this.isfull;
 };
 
-module.exports = CircularBuffer;
+module.exports = CircularQueue;

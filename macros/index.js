@@ -9,7 +9,7 @@
 macro core {
   rule {
   } => {
-    require ( './src' )
+    require ( './src/core' )
   }
 }
 
@@ -409,8 +409,8 @@ macro go {
   rule {
     { $e ... }
   } => {
-    (function (async) {
-      return  ( goexpr ( async ) { $e ... } ) . run ();
+    (function (core) {
+      return  ( goexpr ( core ) { $e ... } ) . run ();
     }( core ) );
   }
   rule {
