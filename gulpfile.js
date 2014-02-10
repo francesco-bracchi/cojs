@@ -9,21 +9,21 @@ var gulp = require('gulp'),
 
 gulp.task('default', ['dist']);
 
-gulp.task ('runtime', ['macros'], function () {
-  gulp
-    .src("src/**/*.js")
-    .pipe(sweetjs({modules: ['./dist/macros']}))
-    .pipe(gulp.dest('dist'));
-});
-
 gulp.task ('macros', function () {
-  gulp
+  return gulp
     .src("macros/*.js")
     .pipe (frep([{
       pattern: /require(.*)/,
       replacement: "require('gozilla')"
     }]))
     .pipe (gulp.dest('dist/macros'));
+});
+
+gulp.task ('runtime', ['macros'], function () {
+  return gulp
+    .src("src/**/*.js")
+    .pipe(sweetjs({modules: ['./dist/macros']}))
+    .pipe(gulp.dest('dist'));
 });
 
 gulp.task ('package.json', function () {
@@ -41,7 +41,7 @@ gulp.task ('clean', function () {
 });
 
 gulp.task ('local_install', ['dist'], function () {
-  gulp
+  return gulp
     .src ('dist/**/*.js')
     .pipe(gulp.dest('node_modules/gozilla'));
 });
@@ -52,6 +52,14 @@ gulp.task ('docs', function () {
     .pipe (docco())
     .pipe (gulp.dest('dist/docs'));
 });
-gulp.task('test', ['local_install'], function () {
 
+gulp.task('examples', ['local_install'], function () {
+  gulp
+    .src("examples/**/*.js")
+    .pipe (frep([{
+      pattern: /require(.*)/,
+      replacement: "require('gozilla')"
+    }]))
+    .pipe(sweetjs({modules: ['gozilla/macros']}))
+    .pipe(gulp.dest ('dist/examples'));
 });

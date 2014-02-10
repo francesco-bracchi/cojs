@@ -23,12 +23,12 @@ var main = function (n0, m0) {
   };
   
   var initChannel = function (j) {
-    var ch = gozilla.chan(5), 
+    var ch = gozilla.chan(), 
         m = 0;
     go {
       while (m < m0) {
         recv k <- ch;
-        console.log ('n:' + n + ' m:' + m);
+        // console.log ('n:' + j + ' m:' + m);
         send k -> neighbor(j);
         m++;
       }

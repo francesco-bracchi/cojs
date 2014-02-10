@@ -15,6 +15,7 @@ var ChannelClosed = function (ch) {
   this.message = "Channel Closed";
 };
 
+//### Constructor
 var Channel = function (buffer) {
   this.buffer = buffer;
   this.suspend_recv = new UnlimitedBuffer();
@@ -65,6 +66,17 @@ var recv = function (ch) {
   });
 };
 
+var undirty = function (ch) {
+  return function (s) {
+    ch.dirty = false;
+    if (ch.suspend_recv.empty()) {
+      return suspend;
+    }
+    var receiver = ch.suspend_recv.deq();
+    return receiver (s);
+  };
+};
+
 // ###  Send
 //
 // Build a send action on channel `ch`
@@ -74,11 +86,11 @@ var send = function (ch, v) {
     if (ch.closed) {
       fail (new ChannelClosed(ch), cont, scheduler);
     }
+    ch.buffer.enq(v);
     // if the `Buffer` is not full, continue
     if (! ch.buffer.full()) {
-      if (! ch.dirty) scheduler.enq(undirty (ch));
+      if (! ch.dirty) scheduler.enq(undirty(ch));
       ch.dirty = true;
-      ch.buffer.enq(v);
       return cont (undefined, fail, scheduler);
     }
     // otherwise check if some process is waiting for data. in case 
@@ -87,7 +99,7 @@ var send = function (ch, v) {
     if (! ch.suspend_recv.empty()) {
       var receiver = ch.suspend_recv.deq();
       scheduler.enq (function (s) { return cont (undefined, fail, s); });
-      return receiver(v, scheduler);
+      return receiver(scheduler);
     }
     // if no process is waiting for data, suspend current process
     // **before** sending data (not `cont`) because it has to be sent again
@@ -97,7 +109,7 @@ var send = function (ch, v) {
       }
       var receiver = ch.suspend_recv.deq();
       s.enq(function (s) { return cont (undefined, fail, s); });
-      return receiver (v, s);
+      return receiver (s);
     });
 
     // then tries to resume some active process from `scheduler`

@@ -380,7 +380,7 @@ macro goexpr {
   rule {
     ( $g ) {}
   } => {
-    $g . undef
+    $g . ret ( function () { return undefined ; } )
   }
 }
 

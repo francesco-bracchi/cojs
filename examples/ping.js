@@ -11,7 +11,7 @@ go {
     send m + 1 -> c1;
     x = x + 1;
   }
-  c0.close();
+  c1.close();
 }
 
 go {
@@ -20,7 +20,7 @@ go {
     console.log ('pong ' + m);
     send m + 1 -> c0;
   }
-  c1.close();
+  c0.close();
 }
 
 go send 0 -> c0;
