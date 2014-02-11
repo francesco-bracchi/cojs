@@ -62,7 +62,6 @@ rewrites go blocks, thanks to the power of [sweetjs](http://sweetjs.org/) macros
 
 ## features to be completed
 
-1. buffered Channels
 1. alt channels
 1. enable for loops in go expressions
 1. enable switch statement support in go expressions
