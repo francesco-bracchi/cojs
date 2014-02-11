@@ -2,7 +2,7 @@
  * # Macro module
  *
  * This macro module is the core of the library, the exported macros
- * (`go { }` and `goexpr { }` ) walk through the body and rewrite
+ * (`go { }` and `go_eval { }` ) walk through the body and rewrite
  * it according to the go semantic.
  */
 
@@ -13,17 +13,6 @@ macro core {
   }
 }
 
-
-macro reify {
-  rule {
-    $k:ident = $e:expr => { $f ... }
-  } => {
-    macro $k {
-      rule {} => { $e }
-    }
-    $f ... 
-  }
-}
 /**
  * ### gojs
  *
@@ -89,7 +78,7 @@ macro gobind {
 /**
  * ### goseq
  *
- * Syntactic sugar used to put 2 goexpressions in sequence.
+ * Syntactic sugar used to put 2 go_evalessions in sequence.
  */
 macro goseq {
   rule infix {
@@ -125,9 +114,9 @@ macro gotry {
  * a macro is by itself an expression, in particular an expression that
  * once evaluated generates an object of type Monad.
  *
- * the `go` macro is a wrapper arount `goexpr` that does more or less this:
+ * the `go` macro is a wrapper arount `go_eval` that does more or less this:
  *
- *      go { $e ... } => ( goexpr { $e ... } ) . run()
+ *      go { $e ... } => ( go_eval { $e ... } ) . run()
  *
  * that is, call the method run on the monad.
  *
@@ -148,7 +137,7 @@ macro gotry {
  *   keeping the logic in a single place instead of scattered around.
  */
 
-macro goexpr {
+macro go_eval {
   /**
    * ## recv statement
    *
@@ -168,19 +157,19 @@ macro goexpr {
   rule {
     ( $g ) { recv $v:ident <- $x:expr or $y:expr or $chs ... ; $gs ... }
   } => {
-    goexpr ( $g ) { recv $v <- ( $x ) . alt ( $y ) or $chs ... ; $gs ... }
+    go_eval ( $g ) { recv $v <- ( $x ) . alt ( $y ) or $chs ... ; $gs ... }
   }
 
   rule {
     ( $g ) { recv $v:ident <- $x:expr or $y:expr ; $gs ... }
   } => {
-    goexpr ( $g ) { recv $v <- ( $x ) . alt ( $y ) ; $gs ... }
+    go_eval ( $g ) { recv $v <- ( $x ) . alt ( $y ) ; $gs ... }
   }
 
   rule {
     ( $g ) { recv $v:ident <- $ch:expr ; $gs ... }
   } => {
-    gobind $v = $ch . recv () => goexpr ( $g ) { $gs ... }
+    gobind $v = $ch . recv () => go_eval ( $g ) { $gs ... }
   }
   /**
    * ## send statement
@@ -205,7 +194,7 @@ macro goexpr {
   rule {
     ( $g ) { send $m:expr -> $ch:expr; $gs ... }
   } => {
-    ( $ch ) . send ( $m ) goseq goexpr ( $g ) { $gs ... }
+    ( $ch ) . send ( $m ) goseq go_eval ( $g ) { $gs ... }
   }
 
   /**
@@ -228,8 +217,8 @@ macro goexpr {
     }
   } => {
     ( function loop () {
-      return goexpr ( $g) { $t } . bind ( function ( k ) {
-        return k ? goexpr ( $g ) { $b ... } . bind ( loop ) : goexpr ( $g ) { $gs ... } } )
+      return go_eval ( $g) { $t } . bind ( function ( k ) {
+        return k ? go_eval ( $g ) { $b ... } . bind ( loop ) : go_eval ( $g ) { $gs ... } } )
     } () )
   }
   rule {
@@ -238,7 +227,7 @@ macro goexpr {
       $gs ...
     }
   } => {
-    goexpr ( $g ) { while ( $t ) { $e } $gs ... }
+    go_eval ( $g ) { while ( $t ) { $e } $gs ... }
   }
   /**
    * ## do while statement
@@ -255,8 +244,8 @@ macro goexpr {
     }
   } => {
     ( function loop () {
-      return goexpr ( $g ) { $b ... } goseq goexpr ( $g ) { $t } . bind ( function ( k ) {
-        return k ? loop () : goexpr ( $g ) { $gs ... } ;
+      return go_eval ( $g ) { $b ... } goseq go_eval ( $g ) { $t } . bind ( function ( k ) {
+        return k ? loop () : go_eval ( $g ) { $gs ... } ;
       } ) ; } () )
   }
 
@@ -293,7 +282,7 @@ macro goexpr {
   rule {
     ( $g ) { throw $e:expr ; $gs ...}
   } => {
-    ( gofail ( $g ) $e ) . bind ( function () { return goexpr ( $g ) { $gs ... } ; } )
+    ( gofail ( $g ) $e ) . bind ( function () { return go_eval ( $g ) { $gs ... } ; } )
   }
 
   /**
@@ -305,25 +294,25 @@ macro goexpr {
   rule {
     ( $g ) { if ( $t:expr ) { $l ... } else { $r ... } $gs ... }
   } => {
-    goexpr ( $g ) { $t } . bind ( function ( k ) { return k ? goexpr ( $g ) { $l ... } : goexpr ( $g ) { $r ... } ;  } )
+    go_eval ( $g ) { $t } . bind ( function ( k ) { return k ? go_eval ( $g ) { $l ... } : go_eval ( $g ) { $r ... } ;  } )
   }
 
   rule {
     ( $g ) { if ( $t:expr ) { $e ... } $gs ... }
   } => {
-    goexpr ( $g ) { if ( $t ) { $e ... } else { undefined } $gs ... }
+    go_eval ( $g ) { if ( $t ) { $e ... } else { undefined } $gs ... }
   }
 
   rule {
     ( $g ) { if ( $t:expr ) $e ; $gs ... }
   } => {
-    goexpr ( $g ) { if ( $t ) { $e ; } else { undefined } $gs ... }
+    go_eval ( $g ) { if ( $t ) { $e ; } else { undefined } $gs ... }
   }
 
   rule {
     ( $g ) { if ( $t:expr ) $e ... else $f:expr $gs ... }
   } => {
-    goexpr ( $g ) { if ( $t ) $e ... else { $f } $gs ... }
+    go_eval ( $g ) { if ( $t ) $e ... else { $f } $gs ... }
   }
 
   /**
@@ -338,8 +327,8 @@ macro goexpr {
   rule {
     ( $g ) { try { $e ... } catch ( $ex:ident ) { $f ... } $gs ... }
   } => {
-    // ( gotry goexpr { $e ... } catch ( $ex ) goeexpr { $f ... } ) goseq ( goexpr { $gs ... } )
-    ( gotry goexpr ( $g ) { $e ... } catch ( $ex ) goexpr ( $g ) { $f ... } ) . bind ( function () { return goexpr ( $g ) { $gs ... } ; } )
+    // ( gotry go_eval { $e ... } catch ( $ex ) goeexpr { $f ... } ) goseq ( go_eval { $gs ... } )
+    ( gotry go_eval ( $g ) { $e ... } catch ( $ex ) go_eval ( $g ) { $f ... } ) . bind ( function () { return go_eval ( $g ) { $gs ... } ; } )
   }
   /**
    * ## var's
@@ -348,14 +337,14 @@ macro goexpr {
     ( $g ) { var $( $a:ident = $e:expr ) (,) ...  ; $gs ... }
   } => {
     (function ($a (,) ...) {
-      return  gojs ( $g ) { $($a = $e) (;) ... ; } goseq goexpr ( $g ) { $gs ... }
+      return  gojs ( $g ) { $($a = $e) (;) ... ; } goseq go_eval ( $g ) { $gs ... }
     } () )
   }
 
   rule {
     ( $g ) { $v:ident = $e:expr ; $gs ... }
   } => {
-    gojs ( $g ) { $v = $e; } goseq goexpr ( $g ) { $gs ... }
+    gojs ( $g ) { $v = $e; } goseq go_eval ( $g ) { $gs ... }
   }
 
   /**
@@ -366,7 +355,7 @@ macro goexpr {
   rule {
     ( $g ) { $e:expr }
   } => {
-    goexpr ( $g ) { $e ; }
+    go_eval ( $g ) { $e ; }
   }
 
   rule {
@@ -383,7 +372,7 @@ macro goexpr {
   rule {
     ( $g ) { $g0:expr ; $gs ... }
   } => {
-    goexpr ( $g ) { $g0 } goseq goexpr ( $g ) { $gs ... }
+    go_eval ( $g ) { $g0 } goseq go_eval ( $g ) { $gs ... }
   }
 
   rule {
@@ -396,11 +385,11 @@ macro goexpr {
 /**
  * # Go macro
  *
- * This is the main way of building a goroutine, as told for goexpr,
- * the main scope of `go` is to wrap `goexpr` that actually build a
+ * This is the main way of building a goroutine, as told for go_eval,
+ * the main scope of `go` is to wrap `go_eval` that actually build a
  * routine, and starting it.
  *
- *      go { $e ... } => ( goexpr { $e ... } ) . run()
+ *      go { $e ... } => ( go_eval { $e ... } ) . run()
  *
  * It provides some shortcuts for single statement expressions in
  * which the expression could be not wrapped in curly braces
@@ -420,7 +409,7 @@ macro go {
     { $e ... }
   } => {
     (function (core) {
-      return  ( goexpr ( core ) { $e ... } ) . run ();
+      return  ( go_eval ( core ) { $e ... } ) . run ();
     }( core ) );
   }
   rule {
@@ -483,9 +472,9 @@ macro go {
 /**
  * # Export
  *
- * Exported macros are `go` and `goexpr`
+ * Exported macros are `go` and `go_eval`
  * the former the default case, the latter can be useful in case
  * the routine should be deferred, or used as a value.
  */
 export go;
-export goexpr;
+export go_eval;
