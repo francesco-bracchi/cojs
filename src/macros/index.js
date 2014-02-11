@@ -155,21 +155,37 @@ macro go_eval {
    */
 
   rule {
-    ( $g ) { recv $v:ident <- $x:expr or $y:expr or $chs ... ; $gs ... }
+    ( $g ) { 
+      recv $v:ident <- $x:expr or $y:expr or $chs ... ; 
+      $gs ... 
+    }
   } => {
-    go_eval ( $g ) { recv $v <- ( $x ) . alt ( $y ) or $chs ... ; $gs ... }
+    go_eval ( $g ) { 
+      recv $v <- ( $x ) . alt ( $y ) or $chs ... ; 
+      $gs ... 
+    }
   }
 
   rule {
-    ( $g ) { recv $v:ident <- $x:expr or $y:expr ; $gs ... }
+    ( $g ) { 
+      recv $v:ident <- $x:expr or $y:expr ; 
+      $gs ... 
+    }
   } => {
-    go_eval ( $g ) { recv $v <- ( $x ) . alt ( $y ) ; $gs ... }
+    go_eval ( $g ) { 
+      recv $v <- ( $x ) . alt ( $y ) ; 
+      $gs ... 
+    }
   }
 
   rule {
-    ( $g ) { recv $v:ident <- $ch:expr ; $gs ... }
+    ( $g ) {
+      recv $v:ident <- $ch:expr ; 
+      $gs ... 
+    }
   } => {
-    gobind $v = $ch . recv () => go_eval ( $g ) { $gs ... }
+    gobind $v = $ch . recv () 
+      => go_eval ( $g ) { $gs ... }
   }
   /**
    * ## send statement
@@ -186,13 +202,18 @@ macro go_eval {
    */
 
   rule {
-    ( $g ) { send $m:expr -> $ch:expr; }
+    ( $g ) { 
+      send $m:expr -> $ch:expr; 
+    }
   } => {
     ( $ch ) . send ( $m )
   }
 
   rule {
-    ( $g ) { send $m:expr -> $ch:expr; $gs ... }
+    ( $g ) { 
+      send $m:expr -> $ch:expr;
+      $gs ... 
+    }
   } => {
     ( $ch ) . send ( $m ) goseq go_eval ( $g ) { $gs ... }
   }
@@ -261,29 +282,6 @@ macro go_eval {
   } => {
     gojs ( $g ) $e
   }
-  /**
-   * ## throw statement
-   *
-   * As in javascript throw throws an exception.
-   * It can be handled using the classical `try { } catch (e) { } ` statement.
-   */
-  rule {
-    ( $g ) { throw $e:expr }
-  } => {
-    gofail ( $g ) $e
-  }
-
-  rule {
-    ( $g ) { throw $e:expr ; }
-  } => {
-    gofail ( $g ) $e
-  }
-
-  rule {
-    ( $g ) { throw $e:expr ; $gs ...}
-  } => {
-    ( gofail ( $g ) $e ) . bind ( function () { return go_eval ( $g ) { $gs ... } ; } )
-  }
 
   /**
    * ## if statement
@@ -292,25 +290,43 @@ macro go_eval {
    * right otherwise.
    */
   rule {
-    ( $g ) { if ( $t:expr ) { $l ... } else { $r ... } $gs ... }
+    ( $g ) { 
+      if ( $t:expr ) { 
+        $l ... 
+      } else { 
+        $r ... 
+      } 
+      $gs ... 
+    }
   } => {
     go_eval ( $g ) { $t } . bind ( function ( k ) { return k ? go_eval ( $g ) { $l ... } : go_eval ( $g ) { $r ... } ;  } )
   }
 
   rule {
-    ( $g ) { if ( $t:expr ) { $e ... } $gs ... }
+    ( $g ) { 
+      if ( $t:expr ) { 
+        $e ... 
+      } 
+      $gs ... 
+    }
   } => {
     go_eval ( $g ) { if ( $t ) { $e ... } else { undefined } $gs ... }
   }
 
   rule {
-    ( $g ) { if ( $t:expr ) $e ; $gs ... }
+    ( $g ) { 
+      if ( $t:expr ) $e ; 
+      $gs ... 
+    }
   } => {
     go_eval ( $g ) { if ( $t ) { $e ; } else { undefined } $gs ... }
   }
 
   rule {
-    ( $g ) { if ( $t:expr ) $e ... else $f:expr $gs ... }
+    ( $g ) { 
+      if ( $t:expr ) $e ... 
+        else $f:expr 
+      $gs ... }
   } => {
     go_eval ( $g ) { if ( $t ) $e ... else { $f } $gs ... }
   }
@@ -325,16 +341,24 @@ macro go_eval {
    * this is raised to the external point.
    */
   rule {
-    ( $g ) { try { $e ... } catch ( $ex:ident ) { $f ... } $gs ... }
+    ( $g ) { 
+      try { $e ... } 
+      catch ( $ex:ident ) { 
+        $f ... 
+      }
+      $gs ... 
+    }
   } => {
-    // ( gotry go_eval { $e ... } catch ( $ex ) goeexpr { $f ... } ) goseq ( go_eval { $gs ... } )
     ( gotry go_eval ( $g ) { $e ... } catch ( $ex ) go_eval ( $g ) { $f ... } ) . bind ( function () { return go_eval ( $g ) { $gs ... } ; } )
   }
   /**
    * ## var's
    */
   rule {
-    ( $g ) { var $( $a:ident = $e:expr ) (,) ...  ; $gs ... }
+    ( $g ) { 
+      var $( $a:ident = $e:expr ) (,) ...  ; 
+      $gs ... 
+    }
   } => {
     (function ($a (,) ...) {
       return  gojs ( $g ) { $($a = $e) (;) ... ; } goseq go_eval ( $g ) { $gs ... }
@@ -342,7 +366,10 @@ macro go_eval {
   }
 
   rule {
-    ( $g ) { $v:ident = $e:expr ; $gs ... }
+    ( $g ) { 
+      $v:ident = $e:expr ; 
+      $gs ... 
+    }
   } => {
     gojs ( $g ) { $v = $e; } goseq go_eval ( $g ) { $gs ... }
   }
@@ -370,7 +397,10 @@ macro go_eval {
    * Main Composition rule: one expression, then the other :)
    */
   rule {
-    ( $g ) { $g0:expr ; $gs ... }
+    ( $g ) { 
+      $g0:expr ; 
+      $gs ... 
+    }
   } => {
     go_eval ( $g ) { $g0 } goseq go_eval ( $g ) { $gs ... }
   }
@@ -413,7 +443,9 @@ macro go {
     }( core ) );
   }
   rule {
-    while ( $t:expr ) { $b ... }
+    while ( $t:expr ) { 
+      $b ... 
+    }
   } => {
     go { while ( $t ) { $b ... } }
   }
@@ -425,13 +457,19 @@ macro go {
   }
 
   rule {
-    do { $b ... } while ( $t:expr ) ;
+    do { 
+      $b ... 
+    } while ( $t:expr ) ;
   } => {
     go { do { $b ... } while ( $t ) ; }
   }
 
   rule {
-    try { $b ... } catch ( $ex:ident) { $f ... }
+    try { 
+      $b ... 
+    } catch ( $ex:ident) {
+      $f ... 
+    }
   } => {
     go { try { $b ... } catch ( $ex ) { $f ... } }
   }
@@ -446,16 +484,32 @@ macro go {
   } => {
     go { for ( $h ... ) { $b ... } }
   }
-  /** IF **/
   rule {
-    if ( $t:expr ) { $l ... } else { $r ... }
+    if ( $t:expr ) { 
+      $l ... 
+    } 
+    else {
+      $r ... 
+    }
   } => {
-    go { if ( $t ) { $l ... } else { $r ... } }
+    go { 
+      if ( $t ) { 
+        $l ... 
+      } else { 
+        $r ... 
+      } 
+    }
   }
   rule {
-    if ( $t:expr ) { $e ... }
+    if ( $t:expr ) {
+      $e ... 
+    }
   } => {
-    go { if ( $t ) { $e ... } }
+    go { 
+      if ( $t ) { 
+        $e ... 
+      } 
+    }
   }
   rule {
     if ( $t:expr ) $e ;
