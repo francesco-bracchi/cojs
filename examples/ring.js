@@ -56,9 +56,14 @@ var getN = function () {
   return parseInt(process.argv[2]);
 };
 
-var n = getN(),
-    m = 1000000 / n;
-
-console.log ('There ' + (n <= 1 ? 'is' : 'are' ) + ' ' + n + ' process' + (n <= 1 ? '' : 'es') + ' organized in a ring');
-console.log ('A message will go around the ring ' + m + ' time' + (m <= 1 ? '' : 's'));
-console.log ('total time: ' +  time (function () { main (n, m); }) + 'ms');
+var n = getN();
+if (n) {
+  var m = 1000000 / n;
+  console.log ('There ' + (n <= 1 ? 'is' : 'are' ) + ' ' + n + ' process' + (n <= 1 ? '' : 'es') + ' organized in a ring');
+  console.log ('A message will go around the ring ' + m + ' time' + (m <= 1 ? '' : 's'));
+  console.log ('total time: ' +  time (function () { main (n, m); }) + 'ms');
+} else {
+  console.log ('usage: ');
+  console.log ('node ring.js <n>');
+  console.log ('Where <n> is the number of concurrent processes (0 < n <= 1000000)');
+}

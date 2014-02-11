@@ -89,7 +89,7 @@ macro goseq {
 }
 
 /**
- * ## gotry
+ * ### gotry
  *
  * Synstactic sugar on try/catch.
  * TBD: why not finally (currently no because of the lack of continue/break)
@@ -106,6 +106,7 @@ macro gotry {
 }
 
 /**
+ * # Go expression
  * This is the principal macro, it takes a list of statements, that are
  * javascript statements, augmented with a couple of new staments, namely
  * `send` statement and `recv` statement.
@@ -138,7 +139,7 @@ macro gotry {
 
 macro goexpr {
   /**
-   * ## Recv statement
+   * ## recv statement
    *
    *     recv val <- channel;
    *
@@ -171,7 +172,7 @@ macro goexpr {
     gobind $v = $ch . recv () => goexpr ( $g ) { $gs ... }
   }
   /**
-   * ## Send statement
+   * ## send statement
    *
    *     send message -> channel;
    *
@@ -197,7 +198,7 @@ macro goexpr {
   }
 
   /**
-   * ## While statement
+   * ## while statement
    *
    *     while ($test) { $body ... }
    *
@@ -249,7 +250,7 @@ macro goexpr {
   }
 
   /**
-   * ## Return statement
+   * ## return statement
    *
    * return statement in a routine does nothing. it evaluates the expression
    * and nothing more, continue in any case.
@@ -261,7 +262,7 @@ macro goexpr {
     gojs ( $g ) $e
   }
   /**
-   * ## Raise statement
+   * ## throw statement
    *
    * As in javascript throw throws an exception.
    * It can be handled using the classical `try { } catch (e) { } ` statement.
@@ -285,7 +286,7 @@ macro goexpr {
   }
 
   /**
-   * ## If statement
+   * ## if statement
    *
    * As expected evaluates the test argument, if it is true, goes on the left,
    * right otherwise.
@@ -315,7 +316,7 @@ macro goexpr {
   }
 
   /**
-   * ## Try/Catch statement
+   * ## try/catch statement
    *
    * This is the try catch statement ;)
    *
@@ -330,10 +331,7 @@ macro goexpr {
     ( gotry goexpr ( $g ) { $e ... } catch ( $ex ) goexpr ( $g ) { $f ... } ) . bind ( function () { return goexpr ( $g ) { $gs ... } ; } )
   }
   /**
-   * ## Var's
-   *
-   * This part is dirty, TODO: check if rewriting using gobind is not only clearer but
-   * even fast enough
+   * ## var's
    */
   rule {
     ( $g ) { var $( $a:ident = $e:expr ) (,) ...  ; $gs ... }
@@ -350,7 +348,7 @@ macro goexpr {
   }
 
   /**
-   * ## General javascript expressions
+   * ## general javascript expressions
    *
    * General javascript exceptions are evaluated as is.
    */
@@ -367,9 +365,9 @@ macro goexpr {
   }
 
   /**
-   * # Composition rule
+   * ## composition rule
    *
-   * Main Composition rule.
+   * Main Composition rule: one expression, then the other :)
    */
   rule {
     ( $g ) { $g0:expr ; $gs ... }
@@ -385,7 +383,7 @@ macro goexpr {
 }
 
 /**
- * Go macro
+ * # Go macro
  *
  * This is the main way of building a goroutine, as told for goexpr,
  * the main scope of `go` is to wrap `goexpr` that actually build a
@@ -399,11 +397,12 @@ macro goexpr {
  *
  *      go while (test) { body } => go { while (test) { body } }
  *
- * ### value
+ * #### value
  *
- * A go statement evaluates to `"send"` or `"recv"` if it is suspended
- * on one of these operations, or the last expression of the goroutine.
- * this is not useful for the final user but only for debugging.
+ * A go statement evaluates most probably to `"suspend"` if it is suspended 
+ * on one of the `send` or `recv` operations.
+ * this is not useful very for the final user, but gives an insight on
+ * the way the engine works.
  */
 macro go {
   rule {
