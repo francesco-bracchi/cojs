@@ -13,6 +13,17 @@ macro core {
   }
 }
 
+
+macro reify {
+  rule {
+    $k:ident = $e:expr => { $f ... }
+  } => {
+    macro $k {
+      rule {} => { $e }
+    }
+    $f ... 
+  }
+}
 /**
  * ### gojs
  *

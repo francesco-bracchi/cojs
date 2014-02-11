@@ -38,7 +38,7 @@ gulp.task ('clean', function () {
 
 gulp.task ('localinstall', ['dist'], function () {
   return gulp
-    .src('dist/**/*.js')
+    .src('dist/lib/**/*.js')
     .pipe(gulp.dest('node_modules/gozilla'));
 });
 
@@ -52,5 +52,5 @@ gulp.task('examples', function () {
     .src("examples/*.js")
     .pipe(gozillify)
     .pipe(sweetjs({modules: ['gozilla/macros']}))
-    .pipe(gulp.dest ('run'));
+    .pipe(gulp.dest ('dist/examples'));
 });
