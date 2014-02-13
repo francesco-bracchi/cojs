@@ -1,16 +1,16 @@
 'use strict';
-var Queue = require ('./src/lib/queue');
 
-var q = new Queue ();
+var chan = require ('./src/chan');
 
-console.log (q);
-q.enq(0);
-console.log (q);
-q.enq(1);
-console.log (q);
-q.deq();
-console.log (q);
-q.deq();
-console.log (q);
-q.deq();
-console.log (q);
+var chicco = function (t, msg) {
+  var ch = chan();
+  setTimeout(function () {
+    go send msg -> ch;
+  }, t);
+  return ch;
+};
+ 
+go {
+  recv m <- chicco(1000, 'uno') or chicco(3000, 'due');
+  console.log ('found: ' + m);
+}

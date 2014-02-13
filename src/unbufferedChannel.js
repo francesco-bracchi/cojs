@@ -17,7 +17,8 @@
 
 var Jump = require ('./jump'),
     Queue = require ('./data_structures/linkedListQueue'),
-    Monad = require ('./monad');
+    Monad = require ('./monad'),
+    AltChannel = require ('./altChannel');
 
 // ### Channel Closed Error
 var ChannelClosed = function (ch) {
@@ -31,6 +32,8 @@ var Channel = function () {
   this.suspend_send = new Queue();
   this.closed = false;
 };
+
+Channel.prototype.alt = AltChannel.prototype.alt;
 
 // suspend execution
 var suspend = new Jump (function () { 

@@ -4,9 +4,10 @@
 // Be careful with buffered channels, because when a routine ends without
 // having filled the buffer, and the channel is not closed, the messages are 
 // not delivered.
-var Queue  = require ('./data_structures/linkedListQueue'),
-    Jump   = require ('./jump'),
-    Monad  = require ('./monad');
+var Queue      = require ('./data_structures/linkedListQueue'),
+    Jump       = require ('./jump'),
+    Monad      = require ('./monad'),
+    AltChannel = require ('./altChannel');
 
 // ### Channel Closed Error
 var ChannelClosed = function (ch) {
@@ -147,5 +148,7 @@ Channel.prototype.close = function () {
     receiver(undefined, new Queue()).run();
   }
 };
+Channel.prototype.alt = AltChannel.prototype.alt;
 
 module.exports = Channel;
+
