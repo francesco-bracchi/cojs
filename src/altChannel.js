@@ -1,6 +1,15 @@
 var Monad = require('./monad'),
     Jump = require('./jump');
 
+// todo:
+// instead of the generic thing that we are doing that resends the message to the
+// channel (breaking the order)
+// we can:
+// + call the `left.recv().action (cont, fail, scheduler)`
+// + take from `left` the last added element to recv_suspend
+// + do the same for `right` (getting a list in cas of altchannels)
+// + once one of the actions is resumed, remove these from the list of recv_suspend
+
 var Channel = function (left, right) {
   this.left = left;
   this.right = right;
