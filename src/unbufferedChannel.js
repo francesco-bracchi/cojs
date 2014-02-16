@@ -18,13 +18,8 @@
 var Jump = require ('./jump'),
     Queue = require ('./data_structures/linkedListQueue'),
     Monad = require ('./monad'),
-    AltChannel = require ('./altChannel');
-
-// ### Channel Closed Error
-var ChannelClosed = function (ch) {
-  this.channel = ch;
-  this.message = "Channel Closed";
-};
+    AltChannel = require ('./altChannel'),
+    ChannelClosed = require('./channelClosed');
 
 // ### Constructor
 var Channel = function () {
@@ -40,28 +35,19 @@ var suspend = new Jump (function () {
   return 'suspend';
 });
 
-// build a suspended receiver 
-var make_receiver = function (ch, cont, fail) {
-  return function (v, s) {
-    if (ch.closed) {
-      fail (new ChannelClosed (ch), cont, s);
-    }
-    return cont (v, fail, s);
-  };
-};
-
 // ### Receive
 //
 // Build a receive action on channel `ch`
 var recv = function (ch) {
   return new Monad(function (cont, fail, scheduler) {
-    // if channel is closed raise an exception
+    // if channel is closed emit null
     if (ch.closed) {
-      fail (new ChannelClosed (ch), cont, scheduler);
+      return cont (null, fail, scheduler);
     }
-    // otherwise suspend current process
-    ch.suspend_recv.enq(make_receiver(ch, cont, fail));
-
+    // otherwise suspend the current process
+    ch.suspend_recv.enq(function (v, s) {
+      return cont (v, fail, s);
+    });
     // and tries to resume a process blocked on sending
     if (! ch.suspend_send.empty()) {
       var sender = ch.suspend_send.deq();
@@ -80,10 +66,10 @@ var recv = function (ch) {
 // ###  Send
 //
 // Build a send action on channel `ch`
-var send = function (ch, v) {
+var send = function (ch, v, requeue) {
   return new Monad(function (cont, fail, scheduler) {
     // if channel is closed raise an exception
-    if (ch.closed) {
+    if (ch.closed && !requeue) {
       fail (new ChannelClosed(ch), cont, scheduler);
     }
     // otherwise check if some process is waiting for data. in case 
@@ -97,8 +83,11 @@ var send = function (ch, v) {
     // if no process is waiting for data, suspend current process
     // **before** sending data (not `cont`) because it has to be sent again
     ch.suspend_send.enq (function (s) {
-      if (ch.closed) { 
+      if (ch.closed && !requeue) { 
         return fail (new ChannelClosed(ch), cont, s);
+      }
+      if (ch.suspend_recv.empty()) {
+        return suspend;
       }
       var receiver = ch.suspend_recv.deq();
       s.enq(function (s) { return cont (undefined, fail, s); });
@@ -114,8 +103,9 @@ var send = function (ch, v) {
 };
 
 // attach to the main object
-Channel.prototype.send = function (v) {
-  return send (this, v);
+// requeue must be undefined, unless in `AltChannel.send`
+Channel.prototype.send = function (v, requeue) {
+  return send (this, v, requeue);
 };
 
 Channel.prototype.recv = function () {
@@ -125,17 +115,17 @@ Channel.prototype.recv = function () {
 // ### Close
 //
 // When an unbuffered channel is closed, all suspended operations are 
-// resumed, raising an error.
+// resumed. (raising an error for `send` actions, returning `null`)
 Channel.prototype.close = function () {
   if (this.closed) return;
   this.closed = true;
-  while (! this.suspend_send.empty()) {
+  while (!this.suspend_send.empty()) {
     var sender = this.suspend_send.deq();
-    sender (new Queue()).run();
+    sender(new Queue()).trampoline();
   }
-  while (! this.suspend_recv.empty()) {
+  while (!this.suspend_recv.empty()) {
     var receiver = this.suspend_recv.deq();
-    receiver(undefined, new Queue()).run();
+    receiver(undefined, new Queue()).trampoline();
   }
 };
 

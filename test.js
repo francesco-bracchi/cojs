@@ -1,16 +1,15 @@
 'use strict';
 
-var chan = require ('./src/chan');
+var chan = require ('gozilla/chan'),
+    timeout = require ('gozilla/channels/timeout');
 
-var chicco = function (t, msg) {
-  var ch = chan();
-  setTimeout(function () {
-    go send msg -> ch;
-  }, t);
-  return ch;
-};
- 
+console.log ('start');
 go {
-  recv m <- chicco(1000, 'uno') or chicco(3000, 'due');
-  console.log ('found: ' + m);
+  var t0 = 1000 * Math.random(),
+      t1 = 1000 * Math.random(),
+      c0 = timeout (t0, 'zero'),
+      c1 = timeout (t1, 'one');
+  recv a <- c0 or c1;
+  recv b <- c0 or c1;
+  console.log ('found: ' + a + ' then ' + b);
 }

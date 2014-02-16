@@ -50,9 +50,7 @@ var initial_fail = function (e, cont, scheduler) {
 // model makes this unique in any case, is not a problem using an ephemeral queue
 // implementation, like the classical `LinkedListQueue`.
 Monad.prototype.run = function () {
-  var v = this.action (initial_continuation, 
-                       initial_fail, 
-                       new Queue());
+  var v = this.action (initial_continuation, initial_fail, new Queue());
   while (v instanceof Jump) {
     v = v.bounce();
   }
