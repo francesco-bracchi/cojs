@@ -18,12 +18,12 @@ var Action = require ('./action'),
 // by the action (like the `return` action in a monad). If some exception is 
 // raised then the fail action is invoked.
 var ret = function (fun) {
-  return new Action (function (tid, cont, fail, active) {
+  return new Action (function (cont, fail, active) {
     return new Trampoline(function () {
       try {
-	return cont (fun(), tid, fail, active);
+	return cont (fun(), fail, active);
       } catch (e) {
-	return fail (e, tid, cont, active);
+	return fail (e, cont, active);
       }
     });
   });
@@ -32,12 +32,12 @@ var ret = function (fun) {
 // Like ret instead it invokes the fail action. In case of exception the 
 // exception is raised before raising the passed value.
 var fail = function (fun) {
-  return new Action (function (tid, cont, fail, active) {
+  return new Action (function (cont, fail, active) {
     return new Trampoline(function () {
       try {
-        return fail (fun (), tid, cont, active);
+        return fail (fun (), cont, active);
       } catch (e) {
-        return fail (e, tid, cont, active);
+        return fail (e, cont, active);
       }
     });
   });

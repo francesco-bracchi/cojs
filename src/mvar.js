@@ -8,44 +8,51 @@ var Mvar = function () {
   this.suspended_put = new Queue();
 };
 
-var suspend = function (tid) {
-  new Trampoline(function () { return tid; });
+Mvar.prototype._put = function (v) {
+  this.value = v;
 };
+
+Mvar.prototype._take = function () {
+   var v = this.value;
+  delete this.value;
+  return v;
+};
+
+var suspend = new Trampoline(function () { return; });
 
 var _setActive = function (cont, active) {
   if (cont) active.enq(cont);
 };
 
-var _tryToResume = function (active, tid) {
+var _tryToResume = function (active) {
   var next = active.deq();
-  return next ? next(active) : suspend (tid);
+  return next ? next(active) : suspend;
 };
 
 var take = function (mvar) {
-  return new Action(function (tid, cont, fail, active) {
-    mvar.suspended_take.enq(function (val, active) {
-      return cont (val, tid, fail, active);
-    });
+  return new Action(function (cont, fail, active) {
     _setActive(mvar.suspended_put.deq(), active);
-    return _tryToResume(active, tid);
+    if (mvar.value===undefined) {
+      mvar.suspended_take.enq(function (active) {
+        return cont(mvar._take(), fail, active);
+      });
+      return _tryToResume(active);
+    }
+    return cont (mvar._take(), fail, active);
   });
 };
 
 var put = function (mvar, val) {
-  return new Action(function(tid, cont, fail, active) {
-    var reallyPut = function (active) {
-      var taker = mvar.suspended_take.deq();
-      active.enq(function (active) {
-        return cont (undefined, tid, fail, active);
+  return new Action(function(cont, fail, active) {
+    _setActive(mvar.suspended_take.deq(), active);
+    if (mvar.value!==undefined) {
+      mvar.suspended_put.enq(function(active) {
+        return cont (mvar._put(val), fail, active);
       });
-      return taker (val, active);
-    };
-    if (!mvar.suspended_take.empty()) {
-      return reallyPut(active);
+      return _tryToResume(active);
     }
-    mvar.suspended_put.enq(reallyPut);
-    return _tryToResume(active, tid);
-  });
+    return cont(mvar._put(val), fail, active);
+  }); 
 };
 
 Mvar.prototype.take = function () {

@@ -29,22 +29,17 @@ var Action = function (action) {
   this.action = action;
 };
 
-var initial_continuation = function (v, tid, fail, active) {
+var initial_continuation = function (v, fail, active) {
   if (active.empty()) {
-    return tid;
+    return new Trampoline(function () { return v; });
   }
   var next = active.deq();
   return next(active);
 };
 
-var initial_fail = function (e, tid, cont, active) {
+var initial_fail = function (e, cont, active) {
   throw e;
 };
-
-var __tid = 0;
-var tid = function () {
-  return ++tid;
-}
 
 // ### run
 // Actually run the monad. passing as initial continuation, a thunk that returns
@@ -55,20 +50,19 @@ var tid = function () {
 // model makes this unique in any case, is not a problem using an ephemeral queue
 // implementation, like the classical `LinkedListQueue`.
 Action.prototype.run = function () {
-  return this.action(tid(), initial_continuation, initial_fail, new Queue()).jump();
+  return this.action(initial_continuation, initial_fail, new Queue()).jump();
 };
 
-Action.prototype.pidify()
 // ### Bind
 // composes 2 monads
 var bind = function (m, next) {
-  return new Action (function (tid, cont, fail, active) {
-    var _cont = function (v, _tid, _fail, _active) {
+  return new Action (function (cont, fail, active) {
+    var _cont = function (v, _fail, _active) {
       return new Trampoline(function () { 
-        return next(v).action(_tid, cont, _fail, _active); 
+        return next(v).action(cont, _fail, _active); 
       });
     };
-    return m.action (tid, _cont, fail, active);
+    return m.action (_cont, fail, active);
   });
 };
 
@@ -78,12 +72,12 @@ var bind = function (m, next) {
 // second is executed (used to implement the `try{...} catch (e) {...}` block.
 var error = function (m, handler) {
   return new Action (function (cont, fail, active) {
-    var _fail = function (err, _tid, _cont, _active) {
+    var _fail = function (err, _cont, _active) {
       return new Trampoline(function () {
-        return handler(err).action (_tid, _cont, fail, _active);
+        return handler(err).action (_cont, fail, _active);
       });
     };
-    return m.action(tid, cont, _fail, active);
+    return m.action(cont, _fail, active);
   });
 };
 
