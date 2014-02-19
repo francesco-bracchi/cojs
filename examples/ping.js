@@ -1,28 +1,29 @@
 // does ping/pong between 2 processes 100 times
 
-var chan = require ('./src/chan');
+var mvar = require ('./src/mvar');
 
-var c0 = chan(),
-    c1 = chan();
+var max = 100000,
+    m0 = mvar(),
+    m1 = mvar();
 
 go {
   var x = 0;
-  while (x < 100) {
-    recv m <- c0;
+  while (x < max) {
+    take m <- m0;
     console.log ('ping ' + m);
-    send m + 1 -> c1;
+    put m + 1 -> m1;
     x = x + 1;
   }
-  c1.close();
 }
 
 go {
   while (true) {
-    recv m <- c1;
+    take m <- m1;
     console.log ('pong ' + m);
-    send m + 1 -> c0;
+    put m + 1 -> m0;
   }
-  c0.close();
 }
 
-go send 0 -> c0;
+console.log ('start');
+go put 0 -> m0;
+console.log ('end');

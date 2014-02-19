@@ -1,16 +1,15 @@
 'use strict';
 
 var fs = require('fs'),
-    withChan = require ('./with_chan');
+    with_mvar = require ('./with_mvar');
 
 var slurp = function (path, options) {
-  return withChan(function (ch) {
+  return with_mvar(function (mv) {
     fs.readFile (path, options, function (err, data) {
       go {
         if (! err) {
-          send data -> ch;
+          put data -> mv;
         }
-        ch.close();
       }
     });
   });

@@ -9,8 +9,8 @@
 // Both of these are supposed to have as argument a function that is evaluated. 
 // In this way if the thunk raises an exception, it is correctly handled.
 
-var Monad = require ('./monad'),
-    Jump = require ('./jump');
+var Action = require ('./action'),
+    Trampoline = require ('./trampoline');
 
 // ### Return
 // 
@@ -18,12 +18,12 @@ var Monad = require ('./monad'),
 // by the action (like the `return` action in a monad). If some exception is 
 // raised then the fail action is invoked.
 var ret = function (fun) {
-  return new Monad (function (cont, fail, scheduler) {
-    return new Jump(function () {
+  return new Action (function (tid, cont, fail, active) {
+    return new Trampoline(function () {
       try {
-	return cont (fun(), fail, scheduler);
+	return cont (fun(), tid, fail, active);
       } catch (e) {
-	return fail (e, cont, scheduler);
+	return fail (e, tid, cont, active);
       }
     });
   });
@@ -32,12 +32,12 @@ var ret = function (fun) {
 // Like ret instead it invokes the fail action. In case of exception the 
 // exception is raised before raising the passed value.
 var fail = function (fun) {
-  return new Monad (function (cont, fail, scheduler) {
-    return new Jump(function () {
+  return new Action (function (tid, cont, fail, active) {
+    return new Trampoline(function () {
       try {
-        return fail (fun (), cont, scheduler);
+        return fail (fun (), tid, cont, active);
       } catch (e) {
-        return fail (e, cont, scheduler);
+        return fail (e, tid, cont, active);
       }
     });
   });

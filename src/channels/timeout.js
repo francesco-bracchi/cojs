@@ -1,12 +1,12 @@
 'use strict';
 
-var withChan = require ('./with_chan');
+var with_mvar = require ('./with_mvar');
 
 var timeout = function (ms, val) {
-  return withChan (function (ch) {
+  return with_mvar (function (mv) {
     setTimeout (function () {
       go {
-        send val -> ch;
+        put val -> mv;
         ch.close();
       }
     }, ms);

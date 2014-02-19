@@ -4,7 +4,7 @@
 
 'use strict';
 
-var chan = require ('./src/chan');
+var mvar = require ('./src/mvar');
 
 var now = function () {
   return (new Date()).getTime();
@@ -27,27 +27,25 @@ var main = function (n0, m0) {
   };
   
   var initChannel = function (j) {
-    var ch = chan(), 
+    var ch = mvar(), 
         m = 0;
+    channels[j] = ch;
     go {
       while (m < m0) {
-        recv k <- ch;
-        // console.log ('n:' + j + ' m:' + m);
-        send k -> neighbor(j);
+        take k <- ch;
+        put k -> neighbor(j);
         m++;
       }
-      neighbor(j).close();
     }
-    return ch;
   };
   
   var init_t = time (function () {
     for (var j = 0; j < n0; j++) 
-      channels[j] = initChannel (j);
+      initChannel (j);
   });
   console.log('processes initialized in ' + init_t + 'ms (' + (init_t / n) + 'ms per process)');
-  var exec_t = time (function () { 
-    go send "go" -> channels[0];
+  var exec_t = time (function () {
+    go put "go" -> channels[0];
   });
   console.log('process run in ' + exec_t + 'ms (' + exec_t / (m * n) + 'ms per message)');
 };

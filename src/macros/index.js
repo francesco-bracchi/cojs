@@ -97,7 +97,7 @@ macro gotry {
 // # Go expression
 // This is the principal macro, it takes a list of statements, that are
 // javascript statements, augmented with a couple of new staments, namely
-// `send` statement and `recv` statement.
+// `put` statement and `take` statement.
 //
 // a macro is by itself an expression, in particular an expression that
 // once evaluated generates an object of type Monad.
@@ -127,9 +127,9 @@ macro gotry {
 
 macro go_eval {
 
-  // ## recv statement
+  // ## take statement
   //
-  //     recv val <- channel;
+  //     take val <- channel;
   //
   // when encountered, this statement tries to get a value from the channel
   // `channel`, and put it in a newly created variable val. then continue
@@ -143,43 +143,43 @@ macro go_eval {
 
   rule {
     ( $g ) { 
-      recv $v:ident <- $x:expr or $y:expr or $chs ... ; 
+      take $v:ident <- $x:expr or $y:expr or $chs ... ; 
       $gs ... 
     }
   } => {
     go_eval ( $g ) { 
-      recv $v <- ( $x ) . alt ( $y ) or $chs ... ; 
+      take $v <- ( $x ) . alt ( $y ) or $chs ... ; 
       $gs ... 
     }
   }
 
   rule {
     ( $g ) { 
-      recv $v:ident <- $x:expr or $y:expr ; 
+      take $v:ident <- $x:expr or $y:expr ; 
       $gs ... 
     }
   } => {
     go_eval ( $g ) { 
-      recv $v <- ( $x ) . alt ( $y ) ; 
+      take $v <- ( $x ) . alt ( $y ) ; 
       $gs ... 
     }
   }
 
   rule {
     ( $g ) {
-      recv $v:ident <- $ch:expr ; 
+      take $v:ident <- $ch:expr ; 
       $gs ... 
     }
   } => {
-    gobind $v = $ch . recv () 
+    gobind $v = $ch . take () 
       => go_eval ( $g ) { $gs ... }
   }
 
-  // ## send statement
+  // ## put statement
   //
-  //     send message -> channel;
+  //     put message -> channel;
   //
-  // It's the counterpart of `recv`. When met tries to put a message in the
+  // It's the counterpart of `take`. When met tries to put a message in the
   // channel. If the channel is buffered it can continue unless the buffer is
   // full, otherwise it suspend itself.
   //
@@ -189,19 +189,19 @@ macro go_eval {
 
   rule {
     ( $g ) { 
-      send $m:expr -> $ch:expr; 
+      put $m:expr -> $ch:expr; 
     }
   } => {
-    ( $ch ) . send ( $m )
+    ( $ch ) . put ( $m )
   }
 
   rule {
     ( $g ) { 
-      send $m:expr -> $ch:expr;
+      put $m:expr -> $ch:expr;
       $gs ... 
     }
   } => {
-    ( $ch ) . send ( $m ) goseq go_eval ( $g ) { $gs ... }
+    ( $ch ) . put ( $m ) goseq go_eval ( $g ) { $gs ... }
   }
 
   // ## while statement
@@ -209,7 +209,7 @@ macro go_eval {
   //     while ($test) { $body ... }
   //
   // This statement tries to mimic javascript `while` loop.
-  // Since the body of the loop can obviously contain `recv` or `send` statements,
+  // Since the body of the loop can obviously contain `take` or `put` statements,
   // it can't be implemented with javascript while, because these can't be resumed.
   // the solution is to use a recursive function.
   //
@@ -408,7 +408,7 @@ macro go_eval {
 // #### value
 //
 // A go statement evaluates most probably to `"suspend"` if it is suspended 
-// on one of the `send` or `recv` operations.
+// on one of the `put` or `take` operations.
 // this is not useful very for the final user, but gives an insight on
 // the way the engine works.
 
@@ -453,9 +453,9 @@ macro go {
   }
 
   rule {
-    send $m:expr -> $ch:expr
+    put $m:expr -> $ch:expr
   } => {
-    go { send $m -> $ch; }
+    go { put $m -> $ch; }
   }
   rule {
     for ( $h ... ) { $b ... }

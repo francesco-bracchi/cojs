@@ -14,6 +14,7 @@ CircularQueue.prototype.enq = function (v) {
   this.front = ++ this.front % this.size;
   this.data[this.front] = v;
   this.isfull = this.front == this.rear;
+  return this;
 };
 
 CircularQueue.prototype.deq = function () {

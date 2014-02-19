@@ -7,6 +7,7 @@ var Pair = function (head, tail) {
 var LinkedListQueue = function () {
   this.head = undefined;
   this.tail = undefined;
+  this.length = 0;
 };
 
 LinkedListQueue.prototype.empty = function () {
@@ -22,6 +23,8 @@ LinkedListQueue.prototype.enq = function (e) {
   else {
     this.head = this.tail = p;
   }
+  this.length++;
+  return this;
 };
 
 LinkedListQueue.prototype.deq = function () {
@@ -33,6 +36,7 @@ LinkedListQueue.prototype.deq = function () {
   else {
     this.head = this.head.cdr;
   }
+  this.length--
   return res;
 };
 
