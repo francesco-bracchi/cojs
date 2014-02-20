@@ -8,20 +8,22 @@ var Mvar = function () {
   this.suspended_put = new Queue();
 };
 
-Mvar.prototype._put = function (v) {
-  this.value = v;
+var _put = function (mvar, v) {
+  mvar.value = v;
 };
 
-Mvar.prototype._take = function () {
-   var v = this.value;
-  delete this.value;
+var _take = function (mvar) {
+  var v = mvar.value;
+  mvar.value = undefined;
   return v;
 };
 
 var suspend = new Trampoline(function () { return; });
 
 var _setActive = function (cont, active) {
-  if (cont) active.enq(cont);
+  if (cont) {
+    active.enq(cont);
+  }
 };
 
 var _tryToResume = function (active) {
@@ -34,11 +36,11 @@ var take = function (mvar) {
     _setActive(mvar.suspended_put.deq(), active);
     if (mvar.value===undefined) {
       mvar.suspended_take.enq(function (active) {
-        return cont(mvar._take(), fail, active);
+        return cont(_take(mvar), fail, active);
       });
       return _tryToResume(active);
     }
-    return cont (mvar._take(), fail, active);
+    return cont (_take(mvar), fail, active);
   });
 };
 
@@ -47,12 +49,12 @@ var put = function (mvar, val) {
     _setActive(mvar.suspended_take.deq(), active);
     if (mvar.value!==undefined) {
       mvar.suspended_put.enq(function(active) {
-        return cont (mvar._put(val), fail, active);
+        return cont (_put(mvar,val), fail, active);
       });
       return _tryToResume(active);
     }
-    return cont(mvar._put(val), fail, active);
-  }); 
+    return cont(_put(mvar,val), fail, active);
+  });
 };
 
 Mvar.prototype.take = function () {
