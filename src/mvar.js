@@ -3,9 +3,10 @@ var ChannelClosed = require('./channelClosed'),
     Trampoline = require('./trampoline'),
     Action = require('./action');
 
-var Mvar = function () {
+var Mvar = function (val) {
   this.suspended_take = new Queue();
   this.suspended_put = new Queue();
+  this.value = val;
 };
 
 var _put = function (mvar, v) {
@@ -65,6 +66,6 @@ Mvar.prototype.put = function (val) {
   return put(this, val);
 };
 
-module.exports = function () {
-  return new Mvar();
+module.exports = function (val) {
+  return new Mvar(val);
 };

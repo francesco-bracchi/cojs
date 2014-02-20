@@ -1,31 +1,37 @@
-// // This function is the entry point of the module.
-// //
-// //     var chan = require('gozilla/chan');
-// //     var ch = chan ();
-// //
-// // called in this variant creates an unbuffered channel
-// //
-// //     var ch = chan (10);
-// //
-// // You can pass as argument a Buffer instance. A buffer instance is an object 
-// // that implements `enq` and `deq` `full` and `empty` methods. 
+var mvar = require("./mvar");
 
-// var BufferedChannel = require ('./bufferedChannel'),
-//     Buffer = require ('./data_structures/circularQueue'),
-//     UnbufferedChannel = require ('./unbufferedChannel');
+var Chan = function () {
+  var hole = mvar();
+  this.takeVar = mvar(hole);
+  this.putVar = mvar(hole);
+};
 
-// // ### create 
-// var chan = function (size) {
-//   // if argument is a number, return a buffered channel of size `size`
-//   if (typeof size === 'number' && size > 0) {
-//     return chan (new Buffer (size));
-//   }
-//   // if argument is a `Buffer`, creates a channel with that buffer.
-//   if (size instanceof Buffer) {
-//     return new BufferedChannel (size);
-//   }
-//   // otherwise returns an `UnbufferedChannel`
-//   return new UnbufferedChannel();
-// };
+var put = function (chan, val) {
+  var newHole = mvar();
+  return go_eval {
+    take oldHole <- chan.putVar;
+    put newHole -> chan.putVar;
+    put [val, newHole] -> oldHole;
+  };
+};
 
-// module.exports = chan;
+var take = function (chan) {
+  return go_eval {
+    take tail <- chan.takeVar;
+    take pair <- tail;
+    put pair[1] -> chan.takeVar;
+    pair[0];
+  };
+};
+
+Chan.prototype.take = function () {
+  return take(this);
+};
+
+Chan.prototype.put = function (val) {
+  return put (this, val);
+};
+
+module.exports = function () {
+  return new Chan();
+};

@@ -85,6 +85,10 @@ Action.prototype.bind = function (fun) {
   return bind (this, fun);
 };
 
+Action.prototype.then = function (a) {
+  return this.bind(function () { return a; });
+};
+
 Action.prototype.error = function (fun) {
   return error (this, fun);
 };

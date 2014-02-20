@@ -16,19 +16,26 @@ gulp.task('default', ['dist']);
 
 gulp.task ('lib', function () {
   return gulp
-    .src(["src/**/*.js", "package.json", "!src/channels/*.js"])
+    .src(["src/**/*.js", "package.json", "!src/channels/*.js", "!src/chan.js"])
     .pipe (gozillify)
     .pipe(gulp.dest('dist/lib'));
 });
 
 gulp.task('lib/channels', ['lib'], function () {
   return gulp
-    .src('src/channels/*.js')
+    .src(['src/channels/*.js'])
     .pipe(sweetjs({modules: ['./dist/lib/macros']}))
     .pipe(gulp.dest('dist/lib/channels'));
 });
 
-gulp.task ('dist', ['lib', 'lib/channels']);
+gulp.task('lib/chan', ['lib'], function () {
+  return gulp
+    .src(['src/chan.js'])
+    .pipe(sweetjs({modules: ['./dist/lib/macros']}))
+    .pipe(gulp.dest('dist/lib'));
+});
+
+gulp.task ('dist', ['lib', 'lib/chan', 'lib/channels']);
 
 gulp.task ('clean', function () {
   return gulp

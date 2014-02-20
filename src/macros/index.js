@@ -140,7 +140,13 @@ macro go_eval {
   // val should be an identifier, while channel any expression.
   //
   // The underlying logic is actually handled by the object `channel`.
-
+  rule {
+    { $e ... }
+  } => {
+    (function (core) {
+      return  ( go_eval ( core ) { $e ... } );
+    }( core ) )
+  }
   rule {
     ( $g ) { 
       take $v:ident <- $x:expr or $y:expr or $chs ... ; 
@@ -416,9 +422,7 @@ macro go {
   rule {
     { $e ... }
   } => {
-    (function (core) {
-      return  ( go_eval ( core ) { $e ... } ) . run ();
-    }( core ) );
+    ( go_eval { $e ... } ) . run ();
   }
   rule {
     while ( $t:expr ) { 
