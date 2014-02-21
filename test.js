@@ -1,25 +1,24 @@
 'use strict';
+console.log ('starty');
+var //chan = require('./src/chan'),
+    mvar = require('./src/mvar');
 
-var chan = require('gozilla/chan'),
-    mvar = require('gozilla/mvar');
-
-var c = chan();
-
-go {
-  take m <- c;
-  console.log('took ' + m);
-}
+var c = mvar();
 
 go {
-  take m <- c;
-  console.log('took ' + m);
+  while (true) {
+    take m <- c;
+    console.log ('took: ' + m);
+  }
 }
 
 go {
   put 10 -> c;
   put 20 -> c;
-}
-
-go {
-  console.log ('10');
+  put 30 -> c;
+  put 40 -> c;
+  put 50 -> c;
+  put 60 -> c;
+  put 70 -> c;
+  put 80 -> c;
 }

@@ -34,27 +34,29 @@ var _tryToResume = function (active) {
 
 var take = function (mvar) {
   return new Action(function (cont, fail, active) {
-    _setActive(mvar.suspended_put.deq(), active);
+    var resume = function (active) {
+      _setActive(mvar.suspended_put.deq(), active);
+      return cont(_take(mvar), fail, active);
+    };
     if (mvar.value===undefined) {
-      mvar.suspended_take.enq(function (active) {
-        return cont(_take(mvar), fail, active);
-      });
+      mvar.suspended_take.enq(resume);
       return _tryToResume(active);
     }
-    return cont (_take(mvar), fail, active);
+    return resume(active);
   });
 };
 
 var put = function (mvar, val) {
   return new Action(function(cont, fail, active) {
-    _setActive(mvar.suspended_take.deq(), active);
-    if (mvar.value!==undefined) {
-      mvar.suspended_put.enq(function(active) {
-        return cont (_put(mvar,val), fail, active);
-      });
+    var resume = function (active) {
+        _setActive(mvar.suspended_take.deq(), active);
+        return cont(_put(mvar,val), fail, active);
+    };
+    if(mvar.value!==undefined) {
+      mvar.suspended_put.enq(resume);
       return _tryToResume(active);
     }
-    return cont(_put(mvar,val), fail, active);
+    return resume(active);
   });
 };
 
