@@ -30,13 +30,13 @@ var main = function (n0, m0) {
     var ch = mvar(), 
         m = 0;
     channels[j] = ch;
-    go {
+    go_eval {
       while (m < m0) {
         take k <- ch;
         put k -> neighbor(j);
         m++;
       }
-    }
+    }.run();
   };
   
   var init_t = time (function () {
@@ -51,7 +51,8 @@ var main = function (n0, m0) {
 };
 
 var getN = function () {
-  return parseInt(process.argv[2]);
+  var v = parseInt(process.argv[2]);
+  return v || 10000;
 };
 
 var n = getN();
