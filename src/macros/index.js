@@ -28,17 +28,6 @@ macro gobind {
   }
 }
 
-// ### goseq
-//
-// Syntactic sugar used to put 2 actionessions in sequence.
-macro goseq {
-  rule infix {
-    $e:expr | $f:expr
-  } => {
-    gobind _ = $e => $f
-  }
-}
-
 // ### gotry
 //
 // Synstactic sugar on try/catch.
@@ -216,9 +205,12 @@ macro action {
     }
   } => {
     ( function loop () {
-      return action ( $g ) { $b ... } goseq action ( $g ) { $t } . bind ( function ( k ) {
-        return k ? loop () : action ( $g ) { $gs ... } ;
-      } ) ; } () )
+      return action ( $g ) { $b ... } 
+        . then ( action ( $g ) { $t } )
+        . bind (function ( k ) {
+          return k ? loop () : action ( $g ) { $gs ... } ; 
+        } ); 
+    } () ) 
   }
 
   // ## return statement
@@ -347,7 +339,7 @@ macro action {
       $gs ... 
     }
   } => {
-    action ( $g ) { $g0 } goseq action ( $g ) { $gs ... }
+    action ( $g ) { $g0 } . then ( action ( $g ) { $gs ... } )
   }
 
   rule {
