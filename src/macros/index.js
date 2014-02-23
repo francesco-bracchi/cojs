@@ -11,46 +11,6 @@ macro core {
   }
 }
 
-// ### gojs
-//
-// Wraps a javascript expression in a monad.
-// the js expression is wrapped in a function passed to  `_core_.ret'
-// because it can handle correctly exceptions raised by the js code.
-//
-macro gojs {
-  rule {
-    ( $g ) { $e:expr }
-  } => {
-    $g . ret ( function () { return $e ; } )
-  }
-  rule {
-    ( $g ) { $e:expr ; }
-  } => {
-    gojs ( $g ) { $e }
-  }
-  rule {
-    ( $g ) { $e ... }
-  } => {
-    $g . ret ( function () { $e ... } )
-  }
-  rule {
-    ( $g ) $e:expr
-  } => {
-    $g . ret ( function () { return $e ; } )
-  }
-}
-
-// ### gofail
-//
-// Raise an exception
-macro gofail {
-  rule {
-    ( $g ) $e:expr
-  } => {
-    $g . fail ( function () { return $e ; } )
-  }
-}
-
 // ### gobind
 //
 // Syntactic sugar used to simplify the call to the `Monad.bind` method.
@@ -207,7 +167,7 @@ macro action {
       $gs ... 
     }
   } => {
-    ( $ch ) . put ( $m ) goseq action ( $g ) { $gs ... }
+    ( $ch ) . put ( $m ) . then ( action ( $g ) { $gs ... } )
   }
 
   // ## while statement
@@ -270,7 +230,7 @@ macro action {
   rule {
     ( $g ) { return $e:expr ; }
   } => {
-    gojs ( $g ) $e
+    $g . ret (function () { return $e ; } )
   }
 
   // ## if statement
@@ -348,7 +308,7 @@ macro action {
     }
   } => {
     (function ($a (,) ...) {
-      return  gojs ( $g ) { $($a = $e) (;) ... ; } goseq action ( $g ) { $gs ... }
+      return $g . ret (function () { $($a = $e) (;) ... }) . then ( action ( $g ) { $gs ... } ) ;
     } () )
   }
 
@@ -358,7 +318,7 @@ macro action {
       $gs ... 
     }
   } => {
-    gojs ( $g ) { $v = $e; } goseq action ( $g ) { $gs ... }
+    $g . ret ( function () { $v = $e ; } ) . then ( action ( $g ) { $gs ... } )
   }
 
   // ## general javascript expressions
@@ -374,7 +334,7 @@ macro action {
   rule {
     ( $g ) { $e:expr ; }
   } => {
-    gojs ( $g ) { $e }
+    $g . ret ( function () { return $e ; } )
   }
   
   // ## composition rule

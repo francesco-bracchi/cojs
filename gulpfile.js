@@ -16,16 +16,16 @@ gulp.task('default', ['dist']);
 
 gulp.task ('lib', function () {
   return gulp
-    .src(["src/**/*.js", "package.json", "!src/channels/*.js", "!src/chan.js"])
+    .src(["src/**/*.js", "package.json", "!src/tasks/*.js", "!src/chan.js"])
     .pipe (gozillify)
     .pipe(gulp.dest('dist/lib'));
 });
 
-gulp.task('lib/channels', ['lib'], function () {
+gulp.task('lib/tasks', ['lib'], function () {
   return gulp
-    .src(['src/channels/*.js'])
+    .src(['src/tasks/*.js'])
     .pipe(sweetjs({modules: ['./dist/lib/macros']}))
-    .pipe(gulp.dest('dist/lib/channels'));
+    .pipe(gulp.dest('dist/lib/tasks'));
 });
 
 gulp.task('lib/sweeten', ['lib'], function () {
@@ -35,7 +35,7 @@ gulp.task('lib/sweeten', ['lib'], function () {
     .pipe(gulp.dest('dist/lib'));
 });
 
-gulp.task ('dist', ['lib', 'lib/sweeten', 'lib/channels']);
+gulp.task ('dist', ['lib', 'lib/sweeten', 'lib/tasks']);
 
 gulp.task ('clean', function () {
   return gulp
