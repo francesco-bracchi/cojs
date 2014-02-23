@@ -6,7 +6,7 @@ var fs = require('fs'),
 var slurp = function (path, options) {
   return with_mvar(function (mv) {
     fs.readFile (path, options, function (err, data) {
-      go {
+      fork {
         if (! err) {
           put data -> mv;
         }

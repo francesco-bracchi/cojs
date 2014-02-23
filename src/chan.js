@@ -8,7 +8,7 @@ var Chan = function () {
 
 var put = function (chan, val) {
   var newHole = mvar();
-  return go_eval {
+  return action {
     take oldHole <- chan.putVar;
     put newHole -> chan.putVar;
     put [val, newHole] -> oldHole;
@@ -16,7 +16,7 @@ var put = function (chan, val) {
 };
 
 var take = function (chan) {
-  return go_eval {
+  return action {
     take tail <- chan.takeVar;
     take pair <- tail;
     put pair[1] -> chan.takeVar;

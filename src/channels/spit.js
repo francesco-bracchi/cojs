@@ -6,7 +6,7 @@ var fs = require('fs'),
 var spit = function (path, data, options) {
   return with_mvar(function (mv) {
     fs.writeFile(path, data, options, function (err) {
-      go {
+      fork {
         if (! err) {
           put true -> mv;
         }

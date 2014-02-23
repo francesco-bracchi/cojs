@@ -25,8 +25,8 @@
 var Trampoline = require ('./trampoline'),
     Queue = require ('./data_structures/linkedListQueue');
 
-var Action = function (action) {
-  this.action = action;
+var Action = function (take) {
+  this.take = take;
 };
 
 var initial_continuation = function (v, fail, active) {
@@ -50,7 +50,7 @@ var initial_fail = function (e, cont, active) {
 // model makes this unique in any case, is not a problem using an ephemeral queue
 // implementation, like the classical `LinkedListQueue`.
 Action.prototype.run = function () {
-  return this.action(initial_continuation, initial_fail, new Queue()).jump();
+  return this.take(initial_continuation, initial_fail, new Queue()).jump();
 };
 
 // ### Bind
@@ -59,10 +59,31 @@ var bind = function (m, next) {
   return new Action (function (cont, fail, active) {
     var _cont = function (v, _fail, _active) {
       return new Trampoline(function () { 
-        return next(v).action(cont, _fail, _active); 
+        return next(v).take(cont, _fail, _active); 
       });
     };
-    return m.action (_cont, fail, active);
+    return m.take (_cont, fail, active);
+  });
+};
+
+
+// ### Then
+// composes 2 monads, ignoring parameter
+//
+//     a.then(b)
+//
+// is the same of 
+// 
+//     a.bind(function() { return b; })
+// 
+var then = function (m, n) {
+  return new Action (function (cont, fail, active) {
+    var _cont = function (v, _fail, _active) {
+      return new Trampoline(function () { 
+        return n.take(cont, _fail, _active); 
+      });
+    };
+    return m.take (_cont, fail, active);
   });
 };
 
@@ -74,10 +95,10 @@ var error = function (m, handler) {
   return new Action (function (cont, fail, active) {
     var _fail = function (err, _cont, _active) {
       return new Trampoline(function () {
-        return handler(err).action (_cont, fail, _active);
+        return handler(err).take (_cont, fail, _active);
       });
     };
-    return m.action(cont, _fail, active);
+    return m.take(cont, _fail, active);
   });
 };
 
@@ -85,8 +106,8 @@ Action.prototype.bind = function (fun) {
   return bind (this, fun);
 };
 
-Action.prototype.then = function (a) {
-  return this.bind(function () { return a; });
+Action.prototype.then = function (action) {
+  return then (this, action);
 };
 
 Action.prototype.error = function (fun) {

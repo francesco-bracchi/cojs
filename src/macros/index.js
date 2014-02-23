@@ -1,5 +1,5 @@
 // This macro module is the core of the library, the exported macros
-// (`go { }` and `go_eval { }` ) walk through the body and rewrite
+// (`go { }` and `action { }` ) walk through the body and rewrite
 // it according to the go semantic.
 ///
 
@@ -70,7 +70,7 @@ macro gobind {
 
 // ### goseq
 //
-// Syntactic sugar used to put 2 go_evalessions in sequence.
+// Syntactic sugar used to put 2 actionessions in sequence.
 macro goseq {
   rule infix {
     $e:expr | $f:expr
@@ -102,9 +102,9 @@ macro gotry {
 // a macro is by itself an expression, in particular an expression that
 // once evaluated generates an object of type Monad.
 //
-// the `go` macro is a wrapper arount `go_eval` that does more or less this:
+// the `go` macro is a wrapper arount `action` that does more or less this:
 //
-//      go { $e ... } => ( go_eval { $e ... } ) . run()
+//      go { $e ... } => ( action { $e ... } ) . run()
 //
 // that is, call the method run on the monad.
 //
@@ -125,7 +125,7 @@ macro gotry {
 //   keeping the logic in a single place instead of scattered around.
 ///
 
-macro go_eval {
+macro action {
 
   // ## take statement
   //
@@ -144,7 +144,7 @@ macro go_eval {
     { $e ... }
   } => {
     (function (core) {
-      return  ( go_eval ( core ) { $e ... } );
+      return  ( action ( core ) { $e ... } );
     }( core ) )
   }
   rule {
@@ -153,7 +153,7 @@ macro go_eval {
       $gs ... 
     }
   } => {
-    go_eval ( $g ) { 
+    action ( $g ) { 
       take $v <- ( $x ) . alt ( $y ) or $chs ... ; 
       $gs ... 
     }
@@ -165,7 +165,7 @@ macro go_eval {
       $gs ... 
     }
   } => {
-    go_eval ( $g ) { 
+    action ( $g ) { 
       take $v <- ( $x ) . alt ( $y ) ; 
       $gs ... 
     }
@@ -178,7 +178,7 @@ macro go_eval {
     }
   } => {
     gobind $v = $ch . take () 
-      => go_eval ( $g ) { $gs ... }
+      => action ( $g ) { $gs ... }
   }
 
   // ## put statement
@@ -207,7 +207,7 @@ macro go_eval {
       $gs ... 
     }
   } => {
-    ( $ch ) . put ( $m ) goseq go_eval ( $g ) { $gs ... }
+    ( $ch ) . put ( $m ) goseq action ( $g ) { $gs ... }
   }
 
   // ## while statement
@@ -229,8 +229,8 @@ macro go_eval {
     }
   } => {
     ( function loop () {
-      return go_eval ( $g) { $t } . bind ( function ( k ) {
-        return k ? go_eval ( $g ) { $b ... } . bind ( loop ) : go_eval ( $g ) { $gs ... } } )
+      return action ( $g) { $t } . bind ( function ( k ) {
+        return k ? action ( $g ) { $b ... } . bind ( loop ) : action ( $g ) { $gs ... } } )
     } () )
   }
   rule {
@@ -239,7 +239,7 @@ macro go_eval {
       $gs ...
     }
   } => {
-    go_eval ( $g ) { while ( $t ) { $e } $gs ... }
+    action ( $g ) { while ( $t ) { $e } $gs ... }
   }
 
   // ## do while statement
@@ -256,8 +256,8 @@ macro go_eval {
     }
   } => {
     ( function loop () {
-      return go_eval ( $g ) { $b ... } goseq go_eval ( $g ) { $t } . bind ( function ( k ) {
-        return k ? loop () : go_eval ( $g ) { $gs ... } ;
+      return action ( $g ) { $b ... } goseq action ( $g ) { $t } . bind ( function ( k ) {
+        return k ? loop () : action ( $g ) { $gs ... } ;
       } ) ; } () )
   }
 
@@ -288,7 +288,7 @@ macro go_eval {
       $gs ... 
     }
   } => {
-    go_eval ( $g ) { $t } . bind ( function ( k ) { return k ? go_eval ( $g ) { $l ... } : go_eval ( $g ) { $r ... } ;  } )
+    action ( $g ) { $t } . bind ( function ( k ) { return k ? action ( $g ) { $l ... } : action ( $g ) { $r ... } ;  } )
   }
 
   rule {
@@ -299,7 +299,7 @@ macro go_eval {
       $gs ... 
     }
   } => {
-    go_eval ( $g ) { if ( $t ) { $e ... } else { undefined } $gs ... }
+    action ( $g ) { if ( $t ) { $e ... } else { undefined } $gs ... }
   }
 
   rule {
@@ -308,7 +308,7 @@ macro go_eval {
       $gs ... 
     }
   } => {
-    go_eval ( $g ) { if ( $t ) { $e ; } else { undefined } $gs ... }
+    action ( $g ) { if ( $t ) { $e ; } else { undefined } $gs ... }
   }
 
   rule {
@@ -317,7 +317,7 @@ macro go_eval {
         else $f:expr 
       $gs ... }
   } => {
-    go_eval ( $g ) { if ( $t ) $e ... else { $f } $gs ... }
+    action ( $g ) { if ( $t ) $e ... else { $f } $gs ... }
   }
 
   // ## try/catch statement
@@ -337,7 +337,7 @@ macro go_eval {
       $gs ... 
     }
   } => {
-    ( gotry go_eval ( $g ) { $e ... } catch ( $ex ) go_eval ( $g ) { $f ... } ) . bind ( function () { return go_eval ( $g ) { $gs ... } ; } )
+    ( gotry action ( $g ) { $e ... } catch ( $ex ) action ( $g ) { $f ... } ) . bind ( function () { return action ( $g ) { $gs ... } ; } )
   }
   // ## var's
 
@@ -348,7 +348,7 @@ macro go_eval {
     }
   } => {
     (function ($a (,) ...) {
-      return  gojs ( $g ) { $($a = $e) (;) ... ; } goseq go_eval ( $g ) { $gs ... }
+      return  gojs ( $g ) { $($a = $e) (;) ... ; } goseq action ( $g ) { $gs ... }
     } () )
   }
 
@@ -358,7 +358,7 @@ macro go_eval {
       $gs ... 
     }
   } => {
-    gojs ( $g ) { $v = $e; } goseq go_eval ( $g ) { $gs ... }
+    gojs ( $g ) { $v = $e; } goseq action ( $g ) { $gs ... }
   }
 
   // ## general javascript expressions
@@ -368,7 +368,7 @@ macro go_eval {
   rule {
     ( $g ) { $e:expr }
   } => {
-    go_eval ( $g ) { $e ; }
+    action ( $g ) { $e ; }
   }
 
   rule {
@@ -387,7 +387,7 @@ macro go_eval {
       $gs ... 
     }
   } => {
-    go_eval ( $g ) { $g0 } goseq go_eval ( $g ) { $gs ... }
+    action ( $g ) { $g0 } goseq action ( $g ) { $gs ... }
   }
 
   rule {
@@ -397,45 +397,45 @@ macro go_eval {
   }
 }
 
-// # Go macro
+// # Fork macro
 //
-// This is the main way of building a goroutine, as told for go_eval,
-// the main scope of `go` is to wrap `go_eval` that actually build a
+// This is the main way of building a goroutine, as told for action,
+// the main scope of `go` is to wrap `action` that actually build a
 // routine, and starting it.
 //
-//      go { $e ... } => ( go_eval { $e ... } ) . run()
+//      fork { $e ... } => ( action { $e ... } ) . run()
 //
 // It provides some shortcuts for single statement expressions in
 // which the expression could be not wrapped in curly braces
 // i.e.
 //
-//      go while (test) { body } => go { while (test) { body } }
+//      fork while (test) { body } => fork { while (test) { body } }
 //
 // #### value
 //
-// A go statement evaluates most probably to `"suspend"` if it is suspended 
+// A fork statement evaluates most probably to `"suspend"` if it is suspended 
 // on one of the `put` or `take` operations.
 // this is not useful very for the final user, but gives an insight on
 // the way the engine works.
 
-macro go {
+macro fork {
   rule {
     { $e ... }
   } => {
-    ( go_eval { $e ... } ) . run ();
+    ( action { $e ... } ) . run ();
   }
   rule {
     while ( $t:expr ) { 
       $b ... 
     }
   } => {
-    go { while ( $t ) { $b ... } }
+    fork { while ( $t ) { $b ... } }
   }
 
   rule {
     while ( $t:expr ) $b:expr;
   } => {
-    go while ( $t ) { $b }
+    fork while ( $t ) { $b }
   }
 
   rule {
@@ -443,7 +443,7 @@ macro go {
       $b ... 
     } while ( $t:expr ) ;
   } => {
-    go { do { $b ... } while ( $t ) ; }
+    fork { do { $b ... } while ( $t ) ; }
   }
 
   rule {
@@ -453,18 +453,18 @@ macro go {
       $f ... 
     }
   } => {
-    go { try { $b ... } catch ( $ex ) { $f ... } }
+    fork { try { $b ... } catch ( $ex ) { $f ... } }
   }
 
   rule {
     put $m:expr -> $ch:expr
   } => {
-    go { put $m -> $ch; }
+    fork { put $m -> $ch; }
   }
   rule {
     for ( $h ... ) { $b ... }
   } => {
-    go { for ( $h ... ) { $b ... } }
+    fork { for ( $h ... ) { $b ... } }
   }
   rule {
     if ( $t:expr ) { 
@@ -474,7 +474,7 @@ macro go {
       $r ... 
     }
   } => {
-    go { 
+    fork { 
       if ( $t ) { 
         $l ... 
       } else { 
@@ -487,7 +487,7 @@ macro go {
       $e ... 
     }
   } => {
-    go { 
+    fork { 
       if ( $t ) { 
         $e ... 
       } 
@@ -496,20 +496,20 @@ macro go {
   rule {
     if ( $t:expr ) $e ;
   } => {
-    go { if ( $t ) $e ; }
+    fork { if ( $t ) $e ; }
   }
   rule {
     if ( $t:expr ) $e ... else $f:expr ;
   } => {
-    go { if ( $t ) $e ... else $f ; }
+    fork { if ( $t ) $e ... else $f ; }
   }
 }
 
 // # Export
 //
-// Exported macros are `go` and `go_eval`
+// Exported macros are `fork` and `action`
 // the former the default case, the latter can be useful in case
 // the routine should be deferred, or used as a value.
 
-export go;
-export go_eval;
+export fork;
+export action;

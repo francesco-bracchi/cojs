@@ -6,7 +6,7 @@ var max = 100000,
     m0 = mvar(),
     m1 = mvar();
 
-go {
+fork {
   var x = 0;
   while (x < max) {
     take m <- m0;
@@ -16,7 +16,7 @@ go {
   }
 }
 
-go {
+fork {
   while (true) {
     take m <- m1;
     console.log ('pong ' + m);
@@ -25,5 +25,5 @@ go {
 }
 
 console.log ('start');
-go put 0 -> m0;
+fork put 0 -> m0;
 console.log ('end');

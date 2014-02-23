@@ -30,13 +30,13 @@ var main = function (n0, m0) {
     var ch = mvar(), 
         m = 0;
     channels[j] = ch;
-    go_eval {
+    fork {
       while (m < m0) {
         take k <- ch;
         put k -> neighbor(j);
         m++;
       }
-    }.run();
+    };
   };
   
   var init_t = time (function () {
@@ -45,7 +45,7 @@ var main = function (n0, m0) {
   });
   console.log('processes initialized in ' + init_t + 'ms (' + (init_t / n) + 'ms per process)');
   var exec_t = time (function () {
-    go put "go" -> channels[0];
+    fork put "go" -> channels[0];
   });
   console.log('process run in ' + exec_t + 'ms (' + exec_t / (m * n) + 'ms per message)');
 };
