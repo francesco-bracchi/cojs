@@ -28,14 +28,14 @@ gulp.task('lib/channels', ['lib'], function () {
     .pipe(gulp.dest('dist/lib/channels'));
 });
 
-gulp.task('lib/chan', ['lib'], function () {
+gulp.task('lib/sweeten', ['lib'], function () {
   return gulp
-    .src(['src/chan.js'])
+    .src(['src/chan.js', 'src/alt.js'])
     .pipe(sweetjs({modules: ['./dist/lib/macros']}))
     .pipe(gulp.dest('dist/lib'));
 });
 
-gulp.task ('dist', ['lib', 'lib/chan', 'lib/channels']);
+gulp.task ('dist', ['lib', 'lib/sweeten', 'lib/channels']);
 
 gulp.task ('clean', function () {
   return gulp

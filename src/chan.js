@@ -1,4 +1,5 @@
-var mvar = require("./mvar");
+var mvar = require("./mvar"),
+    alt = require ("./alt");
 
 var Chan = function () {
   var hole = mvar();
@@ -30,6 +31,10 @@ Chan.prototype.take = function () {
 
 Chan.prototype.put = function (val) {
   return put (this, val);
+};
+
+Chan.prototype.alt = function (n) { 
+  return alt (this, n);
 };
 
 module.exports = function () {

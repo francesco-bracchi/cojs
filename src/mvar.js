@@ -1,7 +1,8 @@
 var ChannelClosed = require('./channelClosed'),
     Queue = require('./data_structures/linkedListQueue'),
     Trampoline = require('./trampoline'),
-    Action = require('./action');
+    Action = require('./action'),
+    alt = require('./alt');
 
 var Mvar = function (val) {
   this.suspended_take = new Queue();
@@ -66,6 +67,10 @@ Mvar.prototype.take = function () {
 
 Mvar.prototype.put = function (val) {
   return put(this, val);
+};
+
+Mvar.prototype.alt = function (n) {
+  return alt (this, n);
 };
 
 module.exports = function (val) {
