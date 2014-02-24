@@ -28,6 +28,17 @@ var ret = function (fun) {
     });
   });
 };
+
+// ### Return unboxed
+// It's the same of return but the value is unboxed
+var retU = function (v) {
+  return new Action (function (cont, fail, active) {
+    return new Trampoline(function () {
+      return cont (v, fail, active);
+    }); 
+  }); 
+};
+
 // ### Fail
 // Like ret instead it invokes the fail action. In case of exception the 
 // exception is raised before raising the passed value.
@@ -45,5 +56,6 @@ var fail = function (fun) {
 
 module.exports = {
   ret: ret,
+  retU: retU,
   fail: fail
 };

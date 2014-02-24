@@ -4,7 +4,7 @@
 
 'use strict';
 
-var mvar = require ('./src/mvar');
+var mvar = require ('../src/mvar');
 
 var now = function () {
   return (new Date()).getTime();
@@ -14,6 +14,7 @@ var time = function (fun) {
   var t0 = now();
   var c = fun();
   var t = now();
+  10;
   return (t - t0);
   return c;
 };

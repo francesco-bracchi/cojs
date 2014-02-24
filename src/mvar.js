@@ -1,5 +1,4 @@
-var ChannelClosed = require('./channelClosed'),
-    Queue = require('./data_structures/linkedListQueue'),
+var Queue = require('./data_structures/linkedListQueue'),
     Trampoline = require('./trampoline'),
     Action = require('./action'),
     alt = require('./alt');
