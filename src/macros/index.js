@@ -123,7 +123,7 @@ macro act {
       act { $es ... }
     }
   }
-
+  // todo: optimize the case of mvar is a literal/identifier for `?` and `!`
   rule {
     {
       val $v:ident = ? $mvar:expr ; 

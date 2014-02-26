@@ -54,24 +54,8 @@ var fail = function (fun) {
   });
 };
 
-var whileLoop = function (test, action) {
-  return (function loop () {
-    return test.bind(function(t) {
-      return t ? action.bind(loop) : retU();
-    });
-  }());
-};
-
-var doWhileLoop = function (action, test) {
-  return action.bind (whileLoop (action, test));
-};
-
 module.exports = {
   ret: ret,
   retU: retU,
-  fail: fail,
-  whileLoop: whileLoop,
-  doWhileLoop: doWhileLoop,
-  Action: Action,
-  Trampoline: Trampoline
+  fail: fail
 };
