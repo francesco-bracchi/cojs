@@ -2,12 +2,18 @@
 var mvar = require('./src/mvar'),
     core = require('./src/core');
 
-var box = mvar();
+var box = mvar(),
+    other = mvar();
 
 fork {
-  do! a = c.take();
-  box! 10;
-  recv a = box;
-  // c <- "message"
-  // ( var ) v = <- c;
+  while (true) {
+    val v =? box;
+    other ! v+1;
+  }
 }
+fork {
+  val v = ?other;
+  console.log ('other: ' + v);
+}
+
+fork { box ! 20; }

@@ -5,6 +5,7 @@ macro core {
   }
 }
 
+
 macro mret {
   rule {
     ( undefined )
@@ -19,15 +20,7 @@ macro mret {
   rule {
     ( $b:expr )
   } => {
-    core . ret ( function () { return $b ; } )
-  }
-}
-
-macro mbind {
-  rule {
-    ( $v:ident, $m:expr,  $e:expr)
-  } => {
-    ( $m ) . bind ( function ( $v ) { return $e ; } ) 
+    core . ret ( function () { return $b } )
   }
 }
 
@@ -37,144 +30,171 @@ macro mseq {
   } => {
     ( $m ) . then ( $n )
   }
+  rule {
+    ( $v:ident = $m:expr,  $e:expr)
+  } => {
+    ( $m ) . bind ( function ( $v ) { return $e ; } ) 
+  }
 }
 
-// macro mwhile {
-//   rule {
-//     $test $body $rest
-//   } => {
-//     (function loop () { 
-//       return ( $test ) . bind ( function ( test ) {
-//         return test ? ( $body ) . bind ( loop ) : ( $rest ) ;
-//       } )
-//     } () )
-//   }
-// }
-
-// macro mdowhile {
-//   rule {
-//     $body $test $rest
-//   } => {
-//     ( function loop ( test ) {
-//       return test ? ( $body ) . then ( ( $test ) . bind ( loop ) ) : ( $rest )
-//     } (true) )
-//   }
-// }
-
-macro action {
+macro mdo {
   rule {
-    { $e:expr }
+    {}
   } => {
-    action { $e ; }
+    mret(undefined)
   }
   rule {
     { $e:expr ; }
   } => {
-    mret ( $e )
+    ( $e )
   }
+  rule {
+    { $e:expr }
+  } => {
+    ( $e )
+  }
+  rule {
+    {
+      val $v:ident = $e:expr ;
+      $es ...
+    }
+  } => {
+    mseq ($v = $e , mdo { $es ... } )
+  }
+  rule {
+    {
+      $e:expr ; 
+      $es ... 
+    }
+  } => {
+    mseq ( $e , mdo { $es ... } )
+  }
+}
+
+
+macro mwhile {
+  rule {
+    ( $test:expr, $body:expr, $rest:expr )
+  } => {
+    ( function loop () {
+      return ( $test ) . bind ( function ( t ) {
+        return t ? ( $body ) . bind (loop) : ( $rest ) } );
+    } () )
+  }
+}
+
+macro act {
   rule {
     {}
   } => {
-    mret ( undefined )
+    mdo {}
   }
   rule {
-    { do! $v:ident = $e:expr ; $es ... }
+    {
+      ret $e:expr ;
+      $es ...
+    }
   } => {
-    mbind (e, mret( $e ), mbind ($v, e, action { $es ... } ) )
+    mdo {
+      val e = mret ($e);
+      e;
+      act { $es ... };
+    }
   }
   rule {
-    { do! $e:expr ; $es ... }
+    { $e:expr }
   } => {
-    mbind (e, mret ( $e ), mseq (e, action { $es ... } ) )
+    mdo { mret ($e) }
   }
+  rule {
+    { $e:expr ; }
+  } => {
+    mdo { mret ($e) ; }
+  }
+  rule {
+    { 
+      val $v:ident = $e:expr ; 
+      $es ... 
+    }
+  } => {
+    mdo {
+      val e = mret ( $e ) ;
+      val $v = e;
+      act { $es ... }
+    }
+  }
+
+  rule {
+    {
+      val $v:ident = ? $mvar:expr ; 
+      $es ...
+    }
+  } => {
+    act {
+      val $v = $mvar . take () ;
+      $es ...
+    }
+  }
+  rule {
+    {
+      $mvar:expr ! $val:expr
+    }
+  } => {
+    act {
+      $mvar ! $val ;
+    }
+  }
+  rule {
+    {
+      $mvar:expr ! $val:expr ;
+      $es ...
+    }
+  } => {
+    act {
+      ret ( $mvar . put ( $val ) );
+      $es ...
+    }
+  }
+  rule {
+    { 
+      while ( $test:expr ) { $b ... }
+      $es ...
+    }
+  } => {
+    mwhile ( act { $test } , 
+             act { $b ... }, 
+             act { $es ... } )
+    // core.whileLoop ( act { $test }, 
+    //                  act { $b ... },
+    //                  act { $es ... } )
+  }
+  // rule {
+  //   while ( $test:expr ) $b:expr ;
+  //   $es ...
+  // } => {
+  //   act {
+  //     while ( $test ) { $b ; }
+  //     $es ...
+  //   }
+  // }
   rule {
     { $e:expr ; $es ... }
   } => {
-    mseq ( mret ( $e ) , action { $es ... } )
-  }
-
-  rule {
-    { recv $v:ident = $c:expr ; $es ... }
-  } => {
-    action {
-      do! $v = ( $c ) . take ();
-      $es ...
+    mdo {
+      mret ($e);
+      act { $es ... };
     }
   }
-
-  rule {
-    { $m:expr ! $c:expr ; $es ... }
-  } => {
-    action {
-      do! $c . put ( $m );
-      $es ...
-    }
-  }
-  // rule {
-  //   {
-  //     take $v:ident <- $c:expr or $d:expr ;
-  //     $es ...
-  //   } 
-  // } => {
-  //   action {
-  //     take $v:ident <- $c . alt ( $d )
-  //     $es ...
-  //   }
-  // }
-
-  // rule {
-  //   {
-  //     take $v:ident <- $c:expr or $d:expr or $e ... ;
-  //     $es ...
-  //   } 
-  // } => {
-  //   action {
-  //     take $v:ident <- ( $c ) . alt ( $d ) or $e ... ;
-  //     $es ...
-  //   }
-  // }
-  
-  // rule {
-  //   {
-  //     take $v:ident <- $c:expr ;
-  //     $es ...
-  //   } 
-  // } => {
-  //   action {
-  //     bind $v = ( ( $c ) . take () ) ;
-  //     $es ...
-  //   }
-  // }
-
-  // rule {
-  //   {
-  //     put $msg:expr -> $c:expr ;
-  //     $es ...
-  //   } 
-  // } => {
-  //   ( mseq ( ( $c ) . put ( $msg ) ) ( action { $es ... } ) )
-  // }
-  
-  // rule {
-  //   while ( $t:expr ) { $bs ... } $es ...
-  // } => {
-  //   ( mwhile ( action { $t } ) ( action { $bs ... } ) ( action { $bs ... } ) )
-  // }
-  
-  // rule {
-  //   do { $bs ... } while ( $t ) ; $es ...
-  // } => {
-  //   ( mdo ( action { $bs ... } ) while ( action { $t } ) ( action { $es ... } ) )
-  // }
 }
 
 macro fork {
   rule {
     { $e ... }
   } => {
-    ( action { $e ... } ) . run ();
+    ( act { $e ... } ) . run ();
   }
 }
 
-export action;
+export mdo;
+export act;
 export fork;

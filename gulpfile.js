@@ -5,7 +5,8 @@ var gulp = require('gulp'),
     sweetjs = require('gulp-sweetjs'),
     clean = require('gulp-clean'),
     frep = require ('gulp-frep'),
-    exec = require ('child_process').exec;
+    exec = require ('child_process').exec,
+    debug = require('gulp-debug');
 
 var gozillify = frep([{
   pattern: /\.\/src/,
@@ -36,6 +37,7 @@ gulp.task ('sweeten', ['sweeten/src', 'sweeten/examples']);
 gulp.task ('sweeten/src', function () {
   return gulp
     .src([paths.src, "!" + paths.macros])
+//    .pipe(debug({verbose: false}))
     .pipe(sweetjs ({modules: ['./src/macros']}))
     .pipe(gulp.dest('dist/src'));
 });

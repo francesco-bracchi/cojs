@@ -31,7 +31,8 @@
     "gulp-frep": "~0.1.0",
     "event-stream": "~3.1.0",
     "docco-husky": "~0.3.3",
-    "lodash": "~2.4.1"
+    "lodash": "~2.4.1",
+    "gulp-debug": "~0.2.0"
   },
   "docco_husky": {
     "output_dir": "dist/docs",

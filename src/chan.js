@@ -9,18 +9,18 @@ var Chan = function () {
 
 var put = function (chan, val) {
   var newHole = mvar();
-  return action {
-    take oldHole <- chan.putVar;
-    put newHole -> chan.putVar;
-    put [val, newHole] -> oldHole;
+  return act {
+    val oldHole = ? chan.putVar;
+    chan.putVar ! newHole;
+    oldHole ! [val, newHole];
   };
 };
 
 var take = function (chan) {
-  return action {
-    take tail <- chan.takeVar;
-    take pair <- tail;
-    put pair[1] -> chan.takeVar;
+  return act {
+    val tail = ?chan.takeVar;
+    val pair = ?tail;
+    chan.takeVar ! pair[1];
     pair[0];
   };
 };

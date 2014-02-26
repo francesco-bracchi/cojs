@@ -1,29 +1,30 @@
 // does ping/pong between 2 processes 100 times
 
-var mvar = require ('./src/mvar');
+var mvar = require ('../src/mvar'),
+    core = require ('../src');
 
 var max = 100000,
     m0 = mvar(),
     m1 = mvar();
 
+var x = 0;
 fork {
-  var x = 0;
   while (x < max) {
-    take m <- m0;
+    val m = ?m0;
     console.log ('ping ' + m);
-    put m + 1 -> m1;
-    x = x + 1;
+    m1 ! m + 1;
+    x++;
   }
 }
 
 fork {
   while (true) {
-    take m <- m1;
+    val m = ?m1;
     console.log ('pong ' + m);
-    put m + 1 -> m0;
+    m0 ! m+1;
   }
 }
 
 console.log ('start');
-fork put 0 -> m0;
+fork { m0! 0 }
 console.log ('end');
