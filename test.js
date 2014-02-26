@@ -1,11 +1,13 @@
-var mvar = require('gozilla/mvar'),
-    timeout = require ('gozilla/channels/timeout');
 
-var c = mvar();
+var mvar = require('./src/mvar'),
+    core = require('./src/core');
+
+var box = mvar();
 
 fork {
-  while (true) {
-    take m <- c or timeout(1000, "accipicchia");
-    console.log ('took: ' + m);
-  }
+  do! a = c.take();
+  box! 10;
+  recv a = box;
+  // c <- "message"
+  // ( var ) v = <- c;
 }
