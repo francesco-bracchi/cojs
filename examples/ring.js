@@ -45,21 +45,21 @@ var main = function (n0, m0) {
     for (var j = 0; j < n0; j++) 
       initChannel (j);
   });
-  console.log('processes initialized in ' + init_t + 'ms (' + (init_t / n) + 'ms per process)');
+  console.log('processes initialized in ' + init_t + 'ms (' + (1000 * init_t / n ) + 'micros per process)');
   var exec_t = time (function () {
     fork { channels[0] ! "go" }
   });
-  console.log('process run in ' + exec_t + 'ms (' + exec_t / (m * n) + 'ms per message)');
+  console.log('process run in ' + exec_t + 'ms (' + 1000 * exec_t / (m * n) + 'micros per message)');
 };
 
 var getN = function () {
   var v = parseInt(process.argv[2]);
-  return v || 10000;
+  return Math.min (1000000, Math.max (0, v || 10000));
 };
 
 var n = getN();
 if (n) {
-  var m = 1000000 / n;
+  var m = Math.ceil(1000000 / n);
   console.log ('There ' + (n <= 1 ? 'is' : 'are' ) + ' ' + n + ' process' + (n <= 1 ? '' : 'es') + ' organized in a ring');
   console.log ('A message will go around the ring ' + m + ' time' + (m <= 1 ? '' : 's'));
   console.log ('total time: ' +  time (function () { main (n, m); }) + 'ms');

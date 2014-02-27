@@ -9,6 +9,11 @@ fork {
   while (true) {
     val v =? box;
     other ! v+1;
+    if (v >= 0) {
+      u = 10;
+    } else { 
+      x = 11;
+    }
   }
 }
 fork {

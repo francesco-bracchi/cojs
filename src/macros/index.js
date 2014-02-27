@@ -74,12 +74,22 @@ macro mdo {
 
 macro mwhile {
   rule {
-    ( $test:expr, $body:expr, $rest:expr )
+    { $test:expr, $body:expr, $rest:expr }
   } => {
     ( function loop () {
       return ( $test ) . bind ( function ( t ) {
         return t ? ( $body ) . bind (loop) : ( $rest ) } );
     } () )
+  }
+}
+
+macro mif {
+  rule {
+    { $test:expr , $left:expr , $right:expr }
+  } => {
+    ( $test ) . bind (function ( test ) {
+      return test ? ( $left ) : ( $right ) ;
+    } )
   }
 }
 
@@ -104,12 +114,17 @@ macro act {
   rule {
     { $e:expr }
   } => {
-    mdo { mret ($e) }
+    mdo { mret ( $e ) }
   }
   rule {
     { $e:expr ; }
   } => {
     mdo { mret ($e) ; }
+  }
+  rule {
+    { $v:ident = $e:expr ; }
+  } => {
+    mdo { mret (( $v = $e)) ; }
   }
   rule {
     { 
@@ -137,6 +152,18 @@ macro act {
   }
   rule {
     {
+      $v:ident = ? $mvar:expr ; 
+      $es ...
+    }
+  } => {
+    act {
+      val v = ? $mvar:expr ; 
+      $v = v ;
+      $es ...
+    }
+  }
+  rule {
+    {
       $mvar:expr ! $val:expr
     }
   } => {
@@ -156,27 +183,105 @@ macro act {
     }
   }
   rule {
+    {
+      $v:ident = $e:expr ;
+      $es ...
+    }
+  } => {
+    act {
+      ( $v = $e ) ;
+      act { $es ... } 
+    }
+  }
+  rule {
+    {
+      var $v:ident = $e:expr ;
+      $es ...
+    }
+  } => {
+    act {
+      ( var $v = $e ) ;
+      act { $es ... } 
+    }
+  }
+  rule {
     { 
       while ( $test:expr ) { $b ... }
       $es ...
     }
   } => {
-    mwhile ( act { $test } , 
-             act { $b ... }, 
-             act { $es ... } )
-    // core.whileLoop ( act { $test }, 
-    //                  act { $b ... },
-    //                  act { $es ... } )
+    mwhile { 
+      act { $test } , 
+      act { $b ... } , 
+      act { $es ... } 
+    }
   }
-  // rule {
-  //   while ( $test:expr ) $b:expr ;
-  //   $es ...
-  // } => {
-  //   act {
-  //     while ( $test ) { $b ; }
-  //     $es ...
-  //   }
-  // }
+  rule {
+    {
+      if ( $test:expr ) { $left ... } else { $right ... }
+      $es ...
+    }
+  } => {
+    mdo {
+      mif { act { $test } , act { $left ... } , act { $right ... } };
+      act { $es ... }
+    }
+  }
+  rule {
+    {
+      if ( $test:expr ) { $l ... }
+      $es ...
+    }
+  } => {
+    act {
+      if ( $test ) { $l } else {}
+      $es ...
+    }
+  }
+  rule {
+    {
+      if ( $test:expr ) $l:expr ; 
+      $es ...
+    }
+  } => {
+    act {
+      if ( $test ) { $l } 
+      $es ...
+    }
+  }
+  rule {
+    {
+      if ( $test:expr ) $l:expr else { $r ... }
+      $es ...
+    }
+  } => {
+    act {
+      if ( $test ) { $l } else { $r ... } 
+      $es ...
+    }
+  }
+  rule {
+    {
+      if ( $test:expr ) { $l ... } else $r:expr
+      $es ...
+    }
+  } => {
+    act {
+      if ( $test ) { $l ... } else { $r } 
+      $es ...
+    }
+  }
+  rule {
+    {
+      if ( $test:expr ) $l:expr else $r:expr
+      $es ...
+    }
+  } => {
+    act {
+      if ( $test ) { $l } else { $r } 
+      $es ...
+    }
+  }
   rule {
     { $e:expr ; $es ... }
   } => {
