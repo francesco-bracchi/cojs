@@ -1,7 +1,10 @@
-# Gozilla
+# Cojs
 
 This Library is heavily inspired by 
+
 [clojure.core.async](http://clojure.com/blog/2013/06/28/clojure-core-async-channels.html).
+
+and the Haskell MVARs.
 
 It tries to fulfill 2 objectives
 
@@ -16,7 +19,7 @@ rewrites go blocks, thanks to the power of [sweetjs](http://sweetjs.org/) macros
 
 # Install
 
-    npm install sweetjs gozilla
+    npm install cojs
 
 ## Use
 

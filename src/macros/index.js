@@ -24,6 +24,13 @@ macro mret {
   }
 }
 
+macro mfail {
+  rule {
+    ( $e:expr )
+  } => {
+    core . fail ( function () { return $e; } )
+  }
+}
 macro mseq {
   rule {
     ( $m:expr ,  $n:expr )
@@ -90,6 +97,14 @@ macro mif {
     ( $test ) . bind (function ( test ) {
       return test ? ( $left ) : ( $right ) ;
     } )
+  }
+}
+
+macro mtry {
+  rule {
+     $b:expr catch ( $e:ident ) $h:expr
+  } => {
+    ( $b ) . error ( function ( $e ) { return $h ; } )
   }
 }
 
@@ -195,14 +210,16 @@ macro act {
   }
   rule {
     {
-      var $v:ident = $e:expr ;
+      var $( $v:ident = $e:expr ) (,) ... ;
       $es ...
     }
   } => {
-    act {
-      ( var $v = $e ) ;
-      act { $es ... } 
-    }
+    (function ( $v (,) ... ) {
+     return mdo {
+       core . ret ( function () { $ ( $v = $e ) (;) ... ; } ) ;
+       act { $es ... } 
+     }
+    } () )
   }
   rule {
     { 
@@ -218,13 +235,24 @@ macro act {
   }
   rule {
     {
+      if ( $test:expr ) { $l ... } else $r:expr ;
+      $es ...
+    }
+  } => {
+    act {
+      if ( $test ) { $l ... } else { $r ; } 
+      $es ...
+    }
+  }
+  rule {
+    {
       if ( $test:expr ) { $left ... } else { $right ... }
       $es ...
     }
   } => {
     mdo {
       mif { act { $test } , act { $left ... } , act { $right ... } };
-      act { $es ... }
+      act { $es ... } ;
     }
   }
   rule {
@@ -234,7 +262,7 @@ macro act {
     }
   } => {
     act {
-      if ( $test ) { $l } else {}
+      if ( $test ) { $l ... } else {}
       $es ...
     }
   }
@@ -262,24 +290,39 @@ macro act {
   }
   rule {
     {
-      if ( $test:expr ) { $l ... } else $r:expr
+      if ( $test:expr ) $l:expr else $r:expr ;
       $es ...
     }
   } => {
     act {
-      if ( $test ) { $l ... } else { $r } 
+      if ( $test ) { $l ; } else { $r ; } 
       $es ...
     }
   }
   rule {
     {
-      if ( $test:expr ) $l:expr else $r:expr
+      try {
+        $b ...
+      } catch ( $ex:ident ) {
+        $h ...
+      }
       $es ...
     }
   } => {
-    act {
-      if ( $test ) { $l } else { $r } 
-      $es ...
+    mdo {
+      mtry ( act { $b ... } ) catch ( $ex ) (act { $h ... } ) ;
+      act { $es ... }
+    }
+  }
+  rule {
+    { 
+      throw $e:expr; 
+      $es ... 
+    }
+  } => {
+    mdo {
+      mfail ($e) ;
+      act { $es ... } ;
     }
   }
   rule {
