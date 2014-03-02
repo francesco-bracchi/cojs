@@ -90,6 +90,20 @@ macro mwhile {
   }
 }
 
+macro mdowhile {
+  rule {
+    { $body:expr, $test: expr, $rest:expr } 
+  } => {
+    ( function loop () {
+      return ( $body ) 
+        . then ( $test )
+        . bind ( function (t) {
+          return t ? loop () : $rest ;
+        } ) ;
+    } () )
+  }
+}
+
 macro mif {
   rule {
     { $test:expr , $left:expr , $right:expr }
@@ -231,6 +245,79 @@ macro act {
       act { $test } , 
       act { $b ... } , 
       act { $es ... } 
+    }
+  }
+  rule {
+    { 
+      do {
+        $b ...
+      }
+      while ( $test:expr );
+      $es ...
+    }
+  } => {
+    mdowhile {
+      act { $b ... }, 
+      act { $test }, 
+      act { $es ... } 
+    }
+  }
+  rule {
+    {
+      for ( var $v:ident in $o:expr ) $e:expr ;
+      $es ...
+    }
+  } => {
+    act {
+      for ( var $v in $o ) { $e ; } 
+      $es ...
+    }
+  }
+  rule {
+    {
+      for ( var $v:ident in $o:expr ) {
+        $e ...
+      }
+      $es ...
+    }
+  } => {
+    act {
+      var $v = undefined, keys = Object.keys( $o ) ;
+      for (var j = 0; j < keys.length; j++) {
+        $v = keys [j];
+        $e ... 
+      }
+      $es ...
+    }
+  }
+  rule {
+    {
+      for ( $a ... ; $b:expr ; $c ... ) $e:expr;
+      $es ...
+    }
+  } => {
+    act {
+      for ( $a ... ; $b ; $c ... ) {
+        $e;
+      }
+      $es ...
+    }
+  }
+  rule {
+    {
+      for ( $a ... ; $b:expr ; $c ... ) {
+        $e ...
+      }
+      $es ...
+    }
+  } => {
+    act {
+      $a ... ;
+      while ( $b ) {
+        act { $e ... } ;
+        act { $c ... } ;
+      }
+      $es ...
     }
   }
   rule {
