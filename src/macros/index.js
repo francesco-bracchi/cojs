@@ -5,7 +5,6 @@ macro core {
   }
 }
 
-
 macro mret {
   rule {
     ( undefined )
@@ -314,8 +313,8 @@ macro act {
     act {
       $a ... ;
       while ( $b ) {
-        act { $e ... } ;
-        act { $c ... } ;
+        $e ... 
+        $c ... 
       }
       $es ...
     }

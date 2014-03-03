@@ -7,13 +7,11 @@ var max = 100000,
     m0 = mvar(),
     m1 = mvar();
 
-var x = 0;
 fork {
-  while (x < max) {
+  for (var x = 0; x < max; x++) {
     val m = ?m0;
     console.log ('ping ' + m);
     m1 ! m + 1;
-    x++;
   }
 }
 
@@ -26,5 +24,5 @@ fork {
 }
 
 console.log ('start');
-fork { m0! 0 }
+fork { m0 ! 0; }
 console.log ('end');
