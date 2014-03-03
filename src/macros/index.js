@@ -218,7 +218,7 @@ macro act {
   } => {
     act {
       ( $v = $e ) ;
-      act { $es ... } 
+      $es ... 
     }
   }
   rule {
@@ -284,7 +284,7 @@ macro act {
       var $v = undefined, keys = Object.keys( $o ) ;
       for (var j = 0; j < keys.length; j++) {
         $v = keys [j];
-        $e ... 
+        $e ...
       }
       $es ...
     }
