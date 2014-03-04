@@ -37,7 +37,6 @@ gulp.task ('sweeten', ['sweeten/src', 'sweeten/examples']);
 gulp.task ('sweeten/src', function () {
   return gulp
     .src([paths.src, "!" + paths.macros])
-//    .pipe(debug({verbose: false}))
     .pipe(sweetjs ({modules: ['./src/macros']}))
     .pipe(gulp.dest('dist/src'));
 });
@@ -59,10 +58,16 @@ gulp.task ('watch', ['sweeten'], function () {
   gulp.watch(paths.examples, ['sweeten/examples']);
 });
 
+gulp.task ('macros', function () {
+  gulp
+    .src(paths.macros)
+    .pipe(gulp.dest('dist/src/macros'));
+});
+
 gulp.task ('package',function () {
   gulp
     .src(['package.json', 'README.md'])
-    .pipe(gulp.dest('dist/lib'));
+    .pipe(gulp.dest('dist/src'));
 });
 
-gulp.task ('dist', ['sweeten', 'package']);
+gulp.task ('dist', ['sweeten', 'macros', 'package']);

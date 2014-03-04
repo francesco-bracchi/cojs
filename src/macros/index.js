@@ -1,3 +1,5 @@
+// main macro module
+
 macro core {
   rule {
   } => {
@@ -43,6 +45,11 @@ macro mseq {
   }
 }
 
+// # mdo
+//
+// the simpler code walker. every line (ending with `;`) is   
+// treated as a monad and bound to the next.
+// if the line matches `val v = ...` it's like `<-` haskell operator.
 macro mdo {
   rule {
     {}
@@ -76,7 +83,6 @@ macro mdo {
     mseq ( $e , mdo { $es ... } )
   }
 }
-
 
 macro mwhile {
   rule {
@@ -120,6 +126,19 @@ macro mtry {
     ( $b ) . error ( function ( $e ) { return $h ; } )
   }
 }
+
+// # Act 
+//
+// Another code walker built on top of `mdo`.
+// this one mimic closer the javascript behavior (although there are some differences).
+// It implements if statements, `for`/`while`/`do-while` loops, try/catch blocks etc.
+//
+// `val v = ... ` is still the way of getting a monad result, but the straight line is 
+// wrapped ina a return statement.
+//
+// special operators are `!` and '?'.
+// the sentence `val v = ?ch` is transformed in `val v = ch.take()` while 
+// the sentence `ch! msg` is transformed in `ch.put(msg)`
 
 macro act {
   rule {
@@ -421,6 +440,8 @@ macro act {
   }
 }
 
+// # Fork
+// simple wrapper around the `act` macro that runs the built monad directly.
 macro fork {
   rule {
     { $e ... }

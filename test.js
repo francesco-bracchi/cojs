@@ -1,24 +1,32 @@
 
-var mvar = require('./src/mvar'),
-    core = require('./src/core');
 
-var box = mvar(),
-    other = mvar();
+    // require ('cojs');
+    // var mvar = require('cojs/mvar');
+    require ('./dist/src');
+    var mvar = require ('./dist/src/mvar');
 
-fork {
-  while (true) {
-    val v =? box;
-    other ! v+1;
-    if (v >= 0) {
-      u = 10;
-    } else { 
-      x = 11;
+    var ch = mvar(),
+        m = 80000,
+        n = 0;
+
+    fork {
+      while (true) {
+        val v = ?ch;
+        console.log ('received 1: ' + v);
+      }
     }
-  }
-}
-fork {
-  val v = ?other;
-  console.log ('other: ' + v);
-}
 
-fork { box ! 20; }
+    fork { 
+      while (true) {
+        val v = ?ch;
+        console.log ('received 2: ' + v);
+      }
+    }
+
+    fork {
+      while (n < m) {
+        ch ! n;
+        console.log ('sent: ' + n);
+        n++;
+      }
+    }

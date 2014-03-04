@@ -23,7 +23,7 @@
 'use strict';
 
 var Trampoline = require ('./trampoline'),
-    Queue = require ('./data_structures/linkedListQueue');
+    Queue = require ('./linkedListQueue');
 
 var Action = function (take) {
   this.take = take;
