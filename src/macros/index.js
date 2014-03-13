@@ -121,7 +121,7 @@ macro mif {
 
 macro mtry {
   rule {
-     $b:expr catch ( $e:ident ) $h:expr
+     {$b:expr catch ( $e:ident ) $h:expr }
   } => {
     ( $b ) . error ( function ( $e ) { return $h ; } )
   }
@@ -204,7 +204,7 @@ macro act {
     }
   } => {
     act {
-      val v = ? $mvar:expr ; 
+      val v = ? $mvar ; 
       $v = v ;
       $es ...
     }
@@ -237,6 +237,50 @@ macro act {
   } => {
     act {
       ( $v = $e ) ;
+      $es ... 
+    }
+  }
+  rule {
+    {
+      $v:ident += $e:expr ;
+      $es ...
+    }
+  } => {
+    act {
+      ( $v += $e ) ;
+      $es ... 
+    }
+  }
+  rule {
+    {
+      $v:ident -= $e:expr ;
+      $es ...
+    }
+  } => {
+    act {
+      ( $v -= $e ) ;
+      $es ... 
+    }
+  }
+  rule {
+    {
+      $v:ident *= $e:expr ;
+      $es ...
+    }
+  } => {
+    act {
+      ( $v *= $e ) ;
+      $es ... 
+    }
+  }
+  rule {
+    {
+      $v:ident /= $e:expr ;
+      $es ...
+    }
+  } => {
+    act {
+      ( $v /= $e ) ;
       $es ... 
     }
   }
@@ -415,7 +459,7 @@ macro act {
     }
   } => {
     mdo {
-      mtry ( act { $b ... } ) catch ( $ex ) (act { $h ... } ) ;
+      mtry { act { $b ... } catch ( $ex ) act { $h ... } };
       act { $es ... }
     }
   }
