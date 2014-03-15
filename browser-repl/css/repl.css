@@ -1,0 +1,7 @@
+#repl .read {
+    background: #ececec;
+}
+
+#repl .write {
+    background: #ffecec;
+}

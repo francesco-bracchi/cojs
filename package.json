@@ -33,7 +33,9 @@
     "event-stream": "~3.1.0",
     "docco-husky": "~0.3.3",
     "lodash": "~2.4.1",
-    "gulp-debug": "~0.2.0"
+    "gulp-debug": "~0.2.0",
+    "browserify": "~3.32.1",
+    "gulp-browserify": "~0.5.0"
   },
   "docco_husky": {
     "output_dir": "dist/docs"

@@ -6,7 +6,8 @@ var gulp = require('gulp'),
     clean = require('gulp-clean'),
     frep = require ('gulp-frep'),
     exec = require ('child_process').exec,
-    debug = require('gulp-debug');
+    debug = require('gulp-debug'),
+    browserify = require('gulp-browserify');
 
 var gozillify = frep([{
   pattern: /\.\/src/,
@@ -32,7 +33,7 @@ gulp.task('docco', function () {
   exec ('node_modules/.bin/docco-husky ' + src);
 });
 
-gulp.task ('sweeten', ['sweeten/src', 'sweeten/examples']);
+gulp.task ('sweeten', ['sweeten/src', 'sweeten/examples', 'sweeten/browser-repl']);
 
 gulp.task ('sweeten/src', function () {
   return gulp
@@ -50,6 +51,34 @@ gulp.task ('sweeten/examples', function () {
       replacement: "'..\/src\/core'"
     }]))
     .pipe(gulp.dest('dist/examples'));
+});
+
+gulp.task ('sweeten/browser-repl', function () {
+  gulp
+    .src ('browser-repl/js/repl.js')
+    .pipe(sweetjs ({modules: ['./src/macros']}))
+    .pipe(frep([{
+      pattern: "'\.\/src\/core'",
+      replacement: "'..\/src\/core'"
+    }]))
+    .pipe (gulp.dest ('dist/browser-repl/js'));
+});
+
+gulp.task ('browserify/browser-repl', [
+  'sweeten'
+], function () {
+  gulp
+    .src('dist/browser-repl/js/repl.js')
+    .pipe(browserify())
+    .pipe(gulp.dest('dist/browser-repl/bjs'));
+});
+
+gulp.task ('browser-repl', [
+  'browserify/browser-repl'
+], function () {
+  gulp
+    .src(['browser-repl/*.html', 'browser-repl/**/*.css'])
+    .pipe(gulp.dest('dist/browser-repl'));
 });
 
 gulp.task ('watch', ['sweeten'], function () {
