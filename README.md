@@ -6,18 +6,18 @@ This Library is heavily inspired by
 
 and the Haskell mvars;
 
-It tries to fulfill 2 objectives
-
-1. express application logic in a linear manner, i.e. not scattered in multiple callbacks,
-and avoid the "callback hell",
-
-2. let exceptions to be raised/catched in a natural way, even if the body of the controlled code is 
-split in 2 by a callback.
-
 **This library doesn't make use generators or promises, but a walker is implemented, that
-rewrites fork blocks, thanks to the power of [sweetjs](http://sweetjs.org/) macros**
+rewrites fork blocks, thanks to [sweetjs](http://sweetjs.org/) macros**
 
 # Install
+
+## Prerequisites 
+
+Install [sweetjs](http://sweetjs.org/) 
+
+    npm install -g sweetjs
+
+## Install
 
     npm install cojs
 

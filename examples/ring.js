@@ -15,7 +15,6 @@ var time = function (fun) {
   var t0 = now();
   var c = fun();
   var t = now();
-  10;
   return (t - t0);
   return c;
 };
@@ -45,11 +44,11 @@ var main = function (n0, m0) {
     for (var j = 0; j < n0; j++) 
       initChannel (j);
   });
-  console.log('processes initialized in ' + init_t + 'ms (' + (1000 * init_t / n ) + 'micros per process)');
+  console.log('processes initialized in ' + init_t + 'ms (' + (1000 * init_t / n ) + 'μs per process)');
   var exec_t = time (function () {
     fork { channels[0] ! "go" }
   });
-  console.log('process run in ' + exec_t + 'ms (' + 1000 * exec_t / (m * n) + 'micros per message)');
+  console.log('process run in ' + exec_t + 'ms (' + 1000 * exec_t / (m * n) + 'μs per message)');
 };
 
 var getN = function () {
