@@ -1,29 +1,31 @@
-# Ping
+# Examples
+
+## Ping
 
 Simple example of 2 threads exchanging the same message n times
 
-## Run
+### Run
 
 compile cojs (from cojs root).
 
     > gulp ping
     > node dist/examples/ping
 
-# Ring
+## Ring
 
 Build a ring of n threads and run a message along the ring m times
 where m is 1000000 / n (one million divided by n).
 
 n should be <= 1000000.
 
-## Run
+### Run
 
 compile cojs (from cojs root). `<n>` is optional (by default is 1000)
 
     > gulp ring
     > node dist/examples/ring <n>
 
-# Browser repl
+## Browser repl
 
 This is a simple example of the use of cojs in client context.
 
@@ -36,7 +38,7 @@ consumed by `read()`.
 
 This example relies on [browserify]{http://browserify.org/}.
 
-## Run
+### Run
 
 compile cojs (from cojs root), and point your browser to the index file
 

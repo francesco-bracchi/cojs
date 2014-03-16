@@ -56,7 +56,7 @@ Install [sweetjs](http://sweetjs.org/)
       }
     }
 
-    Some more examples are implemented in the /examples dir
+Some more examples are implemented in the /examples dir
 
 # TODO
 

@@ -3,6 +3,10 @@ var Queue = require('./linkedListQueue'),
     Action = require('./action'),
     alt = require('./alt');
 
+// ## Mvar
+//
+// creates an object that can contain a value.
+// it implements 2 methods, `put` and `take` that return actions
 var Mvar = function (val) {
   this.suspended_take = new Queue();
   this.suspended_put = new Queue();
@@ -32,6 +36,11 @@ var _tryToResume = function (active) {
   return next ? next(active) : suspend;
 };
 
+// ## Take
+// returns an action that takes the value held by the mvar.
+// This means that if the mvar doesn't contain a value, the 
+// action continuation is saved into the mvar suspended queue,
+// and resumed later when a value is put in it.
 var take = function (mvar) {
   return new Action(function (cont, fail, active) {
     var resume = function (active) {
@@ -46,6 +55,12 @@ var take = function (mvar) {
   });
 };
 
+// ## Put
+// Put is the dual of `take`, it returns an action that puts a 
+// value into the mvar.
+// if a value is already present, the action continuation is 
+// saved into the mvar suspended queue, and resumed later when the
+// value is taken from the mvar by a `take`.
 var put = function (mvar, val) {
   return new Action(function(cont, fail, active) {
     var resume = function (active) {
