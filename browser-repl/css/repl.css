@@ -1,7 +1,30 @@
-#repl .read {
-    background: #ececec;
+#repl pre {
+    padding: 1em;
+    margin:1px;
 }
 
-#repl .write {
-    background: #ffecec;
+#repl .read:before {
+    content: "js> "
+}
+
+#repl .read {
+    background: #ffffce;
+}
+
+#repl .read:last-child:after {
+    content: "|";
+    animation: blink 1s steps(5, start) infinite;
+}
+@keyframes blink {
+    to {
+        visibility: hidden;
+    }
+}
+
+#repl .print {
+    background: #ceffce;
+}
+
+#repl .err {
+    background: #ffcece;
 }

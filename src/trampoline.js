@@ -9,9 +9,12 @@ var Trampoline = function (fn) {
 
 Trampoline.prototype.jump = function () {
   var f = this;
-  while (f instanceof Trampoline) {
+  // while (f instanceof Trampoline) {
+  //   f = f.bounce();
+  // };
+  while (f && f.bounce) {
     f = f.bounce();
-  };
+  }
   return f;
 };
 
