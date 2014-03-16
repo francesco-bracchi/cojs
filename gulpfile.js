@@ -9,15 +9,10 @@ var gulp = require('gulp'),
     debug = require('gulp-debug'),
     browserify = require('gulp-browserify');
 
-var gozillify = frep([{
-  pattern: /\.\/src/,
-  replacement: "gozilla"
-}]);
-
 var paths = {
   'src': "src/**/*.js",
   'macros': "src/macros/*.js",
-  'examples': 'examples/**/*.js'
+  'examples': 'examples/*.js'
 };
 
 gulp.task('default', ['dist']);
@@ -33,7 +28,7 @@ gulp.task('docco', function () {
   exec ('node_modules/.bin/docco-husky ' + src);
 });
 
-gulp.task ('sweeten', ['sweeten/src', 'sweeten/examples', 'sweeten/browser-repl']);
+gulp.task ('sweeten', ['sweeten/src']);
 
 gulp.task ('sweeten/src', function () {
   return gulp
@@ -55,30 +50,34 @@ gulp.task ('sweeten/examples', function () {
 
 gulp.task ('sweeten/browser-repl', function () {
   gulp
-    .src ('browser-repl/js/repl.js')
+    .src ('examples/browser-repl/js/repl.js')
     .pipe(sweetjs ({modules: ['./src/macros']}))
-    .pipe(frep([{
-      pattern: "'\.\/src\/core'",
-      replacement: "'..\/src\/core'"
-    }]))
-    .pipe (gulp.dest ('dist/browser-repl/js'));
+    // .pipe(frep([{
+    //   pattern: "'\.\/src\/core'",
+    //   replacement: "'..\/src\/core'"
+    // }]))
+    .pipe (gulp.dest ('dist/examples/browser-repl/js'));
 });
 
+gulp.task ('ring', ['sweeten/src', 'sweeten/examples']);
+gulp.task ('ping', ['sweeten/src', 'sweeten/examples']);
+
 gulp.task ('browserify/browser-repl', [
-  'sweeten'
+  'sweeten/src',
+  'sweeten/browser-repl'
 ], function () {
   gulp
-    .src('dist/browser-repl/js/repl.js')
+    .src('dist/examples/browser-repl/js/repl.js')
     .pipe(browserify())
-    .pipe(gulp.dest('dist/browser-repl/bjs'));
+    .pipe(gulp.dest('dist/examples/browser-repl/js'));
 });
 
 gulp.task ('browser-repl', [
   'browserify/browser-repl'
 ], function () {
   gulp
-    .src(['browser-repl/*.html', 'browser-repl/**/*.css'])
-    .pipe(gulp.dest('dist/browser-repl'));
+    .src(['examples/browser-repl/*.html', 'examples/browser-repl/**/*.css'])
+    .pipe(gulp.dest('dist/examples/browser-repl'));
 });
 
 gulp.task ('watch', ['sweeten'], function () {

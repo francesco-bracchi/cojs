@@ -1,6 +1,6 @@
 require("../../../src");
 
-var mvar = require("../../src/mvar");
+var mvar = require("../../../src/mvar");
 
 var chars = mvar();
 
