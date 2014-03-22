@@ -1,4 +1,4 @@
-require("../../../src");
+'use strict';
 
 var mvar = require("../../../src/mvar");
 

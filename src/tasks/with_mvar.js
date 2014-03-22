@@ -1,3 +1,5 @@
+'use strict';
+
 var mvar = require ('../mvar');
 
 var with_mvar = function (fun) {

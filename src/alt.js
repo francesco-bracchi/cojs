@@ -1,4 +1,3 @@
-
 'use strict';
 
 var proxy = function (m, o) {

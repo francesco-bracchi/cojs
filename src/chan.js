@@ -1,7 +1,10 @@
+'use strict';
+
 // A channel implements the mvar methods (`put` and `take`)
 // but it doesn't block the current fork block on the `put`, it enqueues the 
 // value. 
 // the only blocking operation is `take` when the queue is empty.
+
 
 var mvar = require("./mvar"),
     alt = require ("./alt");

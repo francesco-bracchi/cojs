@@ -27,7 +27,6 @@ Install [sweetjs](http://sweetjs.org/)
 
 ## example  
 
-    require ('cojs');
     var mvar = require('cojs/mvar');
 
     var ch = mvar(),

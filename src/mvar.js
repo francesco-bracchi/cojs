@@ -1,12 +1,18 @@
+'use strict';
+
 var Queue = require('./linkedListQueue'),
     Trampoline = require('./trampoline'),
     Action = require('./action'),
     alt = require('./alt');
 
+// set the global variable _cojs
+require ('./index');
+
 // ## Mvar
 //
 // creates an object that can contain a value.
 // it implements 2 methods, `put` and `take` that return actions
+
 var Mvar = function (val) {
   this.suspended_take = new Queue();
   this.suspended_put = new Queue();

@@ -99,3 +99,7 @@ gulp.task ('package',function () {
 });
 
 gulp.task ('dist', ['sweeten', 'macros', 'package']);
+
+gulp.task ('publish', ['dist'], function () {
+  exec ('npm publish dist/src');
+})

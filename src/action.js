@@ -1,3 +1,5 @@
+'use strict';
+
 // see [monad on wikipedia](https://en.wikipedia.org/wiki/Action_%28functional_programming%29)
 // 
 // A monad is an object (composable) that represent a piece of computation.
@@ -19,8 +21,6 @@
 // the continuation take as arguments the value, the fail thunk and the queue of 
 // acive coroutines, while the fail function takes the excpetion object, the 
 // success thunk and again the queue of active coroutines.
-
-'use strict';
 
 var Trampoline = require ('./trampoline'),
     Queue = require ('./linkedListQueue');

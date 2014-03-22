@@ -4,8 +4,7 @@
 
 'use strict';
 
-var mvar = require ('../src/mvar'),
-    core = require ('../src');
+var mvar = require ('../src/mvar');
 
 var now = function () {
   return (new Date()).getTime();

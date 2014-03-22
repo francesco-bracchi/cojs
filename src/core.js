@@ -1,3 +1,4 @@
+'use strict';
 // This module contains the basic monad constructors.
 
 var Action = require ('./action'),

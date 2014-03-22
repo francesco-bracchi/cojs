@@ -1,3 +1,5 @@
+'use strict';
+
 // Classical minimalistic Linked List Queue of indefinite length
 var Pair = function (head, tail) {
   this.car = head;
