@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@bitbucket.org:francesco_bracchi/cojs.git"
+    "url": "git@github.com:francesco-bracchi/cojs.git"
   },
   "keywords": [
     "macros",
