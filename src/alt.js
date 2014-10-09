@@ -2,7 +2,7 @@
 
 var proxy = function (m, o) {
   fork {
-    val x = ?m;
+    var x = ?m;
     o! x;
   }
 };

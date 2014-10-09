@@ -24,7 +24,7 @@
   "license": "ISC",
   "dependencies": {},
   "devDependencies": {
-    "sweet.js": "~0.4.0",
+    "sweet.js": "~0.7.1",
     "gulp": "~3.5.1",
     "gulp-util": "~2.2.14",
     "gulp-sweetjs": "~0.2.2",

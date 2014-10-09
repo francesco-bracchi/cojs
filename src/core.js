@@ -32,6 +32,10 @@ var retU = function (v) {
   }); 
 };
 
+// ### Undef(ined)
+// simple constant action that returns undefined
+var undef = retU();
+
 // ### Fail
 // Like ret instead it invokes the fail action. In case of exception the 
 // exception is raised before raising the passed value.
@@ -47,8 +51,32 @@ var fail = function (fun) {
   });
 };
 
+var if_ = function (t, l, r) {
+  if (r === undefined) 
+    r = retU();
+
+  return t.bind (function (t0) { return t ? l : r; });
+};
+
+var while_ = function (t, b) {
+  var loop = function () {
+    return t.bind (function (t0) { 
+      return t0 ? b.bind(loop) : undef;
+    });
+  };
+  return loop ();
+};
+
+var do_ = function (t, b) {
+  return b.then(while_(t, b));
+};
+
 module.exports = {
   ret: ret,
   retU: retU,
-  fail: fail
+  fail: fail,
+  if_: if_,
+  undef: undef,
+  while_: while_,
+  do_: do_
 };

@@ -1,499 +1,341 @@
-// main macro module
 
-macro core {
-  rule {
-  } => {
-    _cojs
-  }
-}
+macro action {
 
-macro mret {
+  // if
   rule {
-    ( undefined )
+    { if ( $t:expr ) { $l ... } else { $r ... } }
   } => {
-    core . retU ()
+    core.if_ ( action ( $t ) , action { $l ... } , action { $r ... } )
   }
   rule {
-    ( $b:lit )
+    { if ( $t:expr ) { $l ... } else { $r ... } $es ... }
   } => {
-    core . retU ( $b )
+    action { if ( $t ) { $l ... } else { $r ... }  } . then ( action { $es ... } )
   }
-  rule {
-    ( $b:expr )
-  } => {
-    core . ret ( function () { return $b } )
-  }
-}
 
-macro mfail {
   rule {
-    ( $e:expr )
+    { if ( $t:expr ) { $l ... } else $r:expr ; }
   } => {
-    core . fail ( function () { return $e; } )
-  }
-}
-macro mseq {
-  rule {
-    ( $m:expr ,  $n:expr )
-  } => {
-    ( $m ) . then ( $n )
+    core.if_ ( action ( $t ) , action { $l ... } , action $r  )
   }
   rule {
-    ( $v:ident = $m:expr,  $e:expr)
+    { if ( $t:expr ) { $l ... } else $r:expr ; $es ... }
   } => {
-    ( $m ) . bind ( function ( $v ) { return $e ; } ) 
+    action { if ( $t ) { $l ... } else $r ; } . then ( action { $es ... } )
   }
-}
 
-// # mdo
-//
-// the simpler code walker. every line (ending with `;`) is   
-// treated as a monad and bound to the next.
-// if the line matches `val v = ...` it's like `<-` haskell operator.
-macro mdo {
   rule {
-    {}
+    { if ( $t:expr ) $l:expr ; else { $r ... } }
   } => {
-    mret(undefined)
+    core.if_ ( action ( $t ) , action ( $l ) , action { $r ... }  )
+  }
+  rule {
+    { if ( $t:expr ) $l:expr; else { $r ... } $es ... }
+  } => {
+    action { if ( $t ) $l ; else { $r ... }  } . then ( action { $es ... } )
+  }
+
+  rule {
+    { if ( $t:expr ) $l:expr ; else $r:expr ; }
+  } => {
+    core.if_ ( action ( $t ) , action ( $l ) , action $r  )
+  }
+  rule {
+    { if ( $t:expr ) $l:expr; else $r:expr ; $es ... }
+  } => {
+    action { if ( $t ) $l ; else $r ;  } . then ( action { $es ... } )
+  }
+
+  rule {
+    { if ( $t:expr ) $l:expr ; }
+  } => {
+    core.if_ ( action ( $t ) , action ( $l )  )
+  }
+
+  rule {
+    { if ( $t:expr ) $l:expr ; $es ... }
+  } => {
+    ( action { if ( $t ) $l ; } ) . then ( action { $es ... } )
+  }
+
+  rule {
+    { if ( $t:expr ) { $l ... } }
+  } => {
+    core.if_ ( action ( $t ) , action { $l ... }  )
+  }
+  rule {
+    { if ( $t:expr ) { $l ... } $es ... }
+  } => {
+    action { if ( $t ) { $l ... } }. then ( action { $es ... } ) 
+  }
+  
+  // ## Put
+  // this is one of the 2 new syntactic operations added, (the other is **Take**)
+  // it is in the form
+  // 
+  //     message ~> channel;
+  // 
+  // it is used to send a message to a channel.
+  // This section contains lot of repetitions for `:lit` and `:ident` because 
+  // these can be optimized without boxing them in a `core.ret` statement.
+
+  // simple put with column
+  rule {
+    { $m:lit ~> $c:ident ; }
+  } => {
+    action { $m ~> $c }
+  }
+  rule {
+    { $m:lit ~> $c:expr ; }
+  } => {
+    action { $m ~> $c }
+  }
+  rule {
+    { $m:ident ~> $c:ident ; }
+  } => {
+    action { $m ~> $c }
+  }
+  rule {
+    { $m:ident ~> $c:expr ; }
+  } => {
+    action { $m ~> $c }
+  }
+  rule {
+    { $m:expr ~> $c:ident ; }
+  } => {
+    action { $m ~> $c }
+  }
+  rule {
+    { $m:expr ~> $c:expr ; }
+  } => {
+    action { $m ~> $c }
+  }
+
+  // put with something afterward
+  rule {
+    { $m:lit ~> $c:ident ; $es ... }
+  } => {
+    action { $m ~> $c } . then ( action { $es ... } )
+  }
+  rule {
+    { $m:lit ~> $c:expr ; $es ...}
+  } => {
+    action { $m ~> $c } . then ( action { $es ... } )
+  }
+  rule {
+    { $m:ident ~> $c:ident ; $es ...}
+  } => {
+    action { $m ~> $c } . then ( action { $es ... } )
+  }
+  rule {
+    { $m:ident ~> $c:expr ; $es ...}
+  } => {
+    action { $m ~> $c } . then ( action { $es ... } )
+  }
+  rule {
+    { $m:expr ~> $c:ident ; $es ...}
+  } => {
+    action { $m ~> $c } . then ( action { $es ... } )
+  }
+  rule {
+    { $m:expr ~> $c:expr ; $es ...}
+  } => {
+    action { $m ~> $c } . then ( action { $es ... } )
+  }
+
+  // simple put expression
+  rule {
+    { $m:lit ~> $c:ident }
+  } => {
+    ( $c ) . put ( $m )
+  }
+  rule {
+    { $m:ident ~> $c:ident }
+  } => {
+    ( $c ) . put ( $m )
+  }
+  rule {
+    { $m:expr ~> $c:ident }
+  } => {
+    action {
+      var m = $m;
+      m ~> $c
+    }
+  }
+  rule {
+    { $m:lit ~> $c:expr }
+  } => {
+    action {
+      var c = $c;
+      $m ~> c
+    }
+  }
+  rule {
+    { $m:ident ~> $c:expr }
+  } => {
+    action {
+      var c = $c;
+      $m ~> c
+    }
+  }
+  rule {
+    { $m:expr ~> $c:expr }
+  } => {
+    action {
+      var m = $m, 
+          c = $c;
+      m ~> c
+    }
+  }
+
+  // Variable declaration
+  // the variable context is no more precedent to the 
+  // variable declaration. therefore this code doesn't correspond to the 
+  // javascript semantic.
+  // 
+  //     var b = function () { return a; };
+  //     var a = 42;
+  //     var c = b (); 
+  //     // c is undefined
+  //
+  rule {
+    { var $v:ident = $e:lit ; $es ... }
+  } => {
+    ( action $e ) . bind ( function ( $v ) { return action { $es ... } ; } )
+  }
+  rule {
+    { var $v:ident = $e:ident ; $es ... }
+  } => {
+    ( action $e ) . bind ( function ( $v ) { return action { $es ... } ; } )
+  }
+  rule {
+    { var $v:ident = $e:expr ; $es ... }
+  } => {
+    ( action $e ) . bind ( function ( $v ) { return action { $es ... } ; } )
+  }
+  rule {
+    { var $v:ident = $e , $es ... }
+  } => {
+    action { var $v = $e ; var $es ... }
+  }
+ 
+  // ## Take
+  // 
+  // This is the second operator used to estract a value from a channel, 
+  // it can be used in a var context (i.e. creating a new variable),
+  // or in a plain expression
+  // 
+  //     var message <~ channel;
+  // 
+  //     message <~ channel;
+  // 
+  // btw the var declaration can be intermixed with normal declaration
+  // separated by commas i.e.
+  // 
+  //     var a <~ ch0, 
+  //         b = foo (), 
+  //         c <~ ch1;
+  //
+  rule {
+    { var $v:ident <~ $e:ident ; $es ... }
+  } => {
+    $e . take () . bind ( function ( $v ) { return action { $es ... } ; } )
+  }
+  rule {
+    { var $v:ident <~ $e:expr ; $es ... }
+  } => {
+    action { var e = $e, v <~ e; $es ... }
+  }
+  rule {
+    { var $v:ident <~ $e:ident , $es ... }
+  } => {
+    action { var $v <~$e ; var $es ... }
+  }
+  rule {
+    { var $v:ident <~ $e:expr , $es ... }
+  } => {
+    action { var $v <~ $e ; var $es ... }
+  }
+  rule {
+    { $v:ident <~ $e:ident ; $es ... }
+  } => {
+    action {
+      var v <~ $e;
+      $v = v;
+      $es ...
+    }
+  } 
+  rule {
+    { $v:ident <~ $e:expr ; $es ... }
+  } => {
+    action {
+      var v <~ $e;
+      $v = v;
+      $es ...
+    }
+  } 
+
+  // single expression that ends with ;
+  rule {
+    { $e:lit ; }
+  } => {
+    action $e
+  }
+  rule {
+    { $e:ident ; }
+  } => {
+    action $e
   }
   rule {
     { $e:expr ; }
   } => {
-    ( $e )
+    action $e
   }
-  rule {
-    { $e:expr }
-  } => {
-    ( $e )
-  }
-  rule {
-    {
-      val $v:ident = $e:expr ;
-      $es ...
-    }
-  } => {
-    mseq ($v = $e , mdo { $es ... } )
-  }
-  rule {
-    {
-      $e:expr ; 
-      $es ... 
-    }
-  } => {
-    mseq ( $e , mdo { $es ... } )
-  }
-}
 
-macro mwhile {
-  rule {
-    { $test:expr, $body:expr, $rest:expr }
-  } => {
-    ( function loop () {
-      return ( $test ) . bind ( function ( t ) {
-        return t ? ( $body ) . bind (loop) : ( $rest ) } );
-    } () )
-  }
-}
-
-macro mdowhile {
-  rule {
-    { $body:expr, $test: expr, $rest:expr } 
-  } => {
-    ( function loop () {
-      return ( $body ) 
-        . then ( $test )
-        . bind ( function (t) {
-          return t ? loop () : $rest ;
-        } ) ;
-    } () )
-  }
-}
-
-macro mif {
-  rule {
-    { $test:expr , $left:expr , $right:expr }
-  } => {
-    ( $test ) . bind (function ( test ) {
-      return test ? ( $left ) : ( $right ) ;
-    } )
-  }
-}
-
-macro mtry {
-  rule {
-     {$b:expr catch ( $e:ident ) $h:expr }
-  } => {
-    ( $b ) . error ( function ( $e ) { return $h ; } )
-  }
-}
-
-// # Act 
-//
-// Another code walker built on top of `mdo`.
-// this one mimic closer the javascript behavior (although there are some differences).
-// It implements if statements, `for`/`while`/`do-while` loops, try/catch blocks etc.
-//
-// `val v = ... ` is still the way of getting a monad result, but the straight line is 
-// wrapped ina a return statement.
-//
-// special operators are `!` and '?'.
-// the sentence `val v = ?ch` is transformed in `val v = ch.take()` while 
-// the sentence `ch! msg` is transformed in `ch.put(msg)`
-
-macro act {
-  rule {
-    {}
-  } => {
-    mdo {}
-  }
-  rule {
-    {
-      ret $e:expr ;
-      $es ...
-    }
-  } => {
-    mdo {
-      val e = mret ($e);
-      e;
-      act { $es ... };
-    }
-  }
-  rule {
-    { $e:expr }
-  } => {
-    mdo { mret ( $e ) }
-  }
-  rule {
-    { $e:expr ; }
-  } => {
-    mdo { mret ($e) ; }
-  }
-  rule {
-    { $v:ident = $e:expr ; }
-  } => {
-    mdo { mret (( $v = $e)) ; }
-  }
-  rule {
-    { 
-      val $v:ident = $e:expr ; 
-      $es ... 
-    }
-  } => {
-    mdo {
-      val e = mret ( $e ) ;
-      val $v = e;
-      act { $es ... }
-    }
-  }
-  // todo: optimize the case of mvar is a literal/identifier for `?` and `!`
-  rule {
-    {
-      val $v:ident = ? $mvar:expr ; 
-      $es ...
-    }
-  } => {
-    act {
-      val $v = $mvar . take () ;
-      $es ...
-    }
-  }
-  rule {
-    {
-      $v:ident = ? $mvar:expr ; 
-      $es ...
-    }
-  } => {
-    act {
-      val v = ? $mvar ; 
-      $v = v ;
-      $es ...
-    }
-  }
-  rule {
-    {
-      $mvar:expr ! $val:expr
-    }
-  } => {
-    act {
-      $mvar ! $val ;
-    }
-  }
-  rule {
-    {
-      $mvar:expr ! $val:expr ;
-      $es ...
-    }
-  } => {
-    act {
-      ret ( $mvar . put ( $val ) );
-      $es ...
-    }
-  }
-  rule {
-    {
-      $v:ident = $e:expr ;
-      $es ...
-    }
-  } => {
-    act {
-      ( $v = $e ) ;
-      $es ... 
-    }
-  }
-  rule {
-    {
-      $v:ident += $e:expr ;
-      $es ...
-    }
-  } => {
-    act {
-      ( $v += $e ) ;
-      $es ... 
-    }
-  }
-  rule {
-    {
-      $v:ident -= $e:expr ;
-      $es ...
-    }
-  } => {
-    act {
-      ( $v -= $e ) ;
-      $es ... 
-    }
-  }
-  rule {
-    {
-      $v:ident *= $e:expr ;
-      $es ...
-    }
-  } => {
-    act {
-      ( $v *= $e ) ;
-      $es ... 
-    }
-  }
-  rule {
-    {
-      $v:ident /= $e:expr ;
-      $es ...
-    }
-  } => {
-    act {
-      ( $v /= $e ) ;
-      $es ... 
-    }
-  }
-  rule {
-    {
-      var $( $v:ident = $e:expr ) (,) ... ;
-      $es ...
-    }
-  } => {
-    (function ( $v (,) ... ) {
-     return mdo {
-       core . ret ( function () { $ ( $v = $e ) (;) ... ; } ) ;
-       act { $es ... } 
-     }
-    } () )
-  }
-  rule {
-    { 
-      while ( $test:expr ) { $b ... }
-      $es ...
-    }
-  } => {
-    mwhile { 
-      act { $test } , 
-      act { $b ... } , 
-      act { $es ... } 
-    }
-  }
-  rule {
-    { 
-      do {
-        $b ...
-      }
-      while ( $test:expr );
-      $es ...
-    }
-  } => {
-    mdowhile {
-      act { $b ... }, 
-      act { $test }, 
-      act { $es ... } 
-    }
-  }
-  rule {
-    {
-      for ( var $v:ident in $o:expr ) $e:expr ;
-      $es ...
-    }
-  } => {
-    act {
-      for ( var $v in $o ) { $e ; } 
-      $es ...
-    }
-  }
-  rule {
-    {
-      for ( var $v:ident in $o:expr ) {
-        $e ...
-      }
-      $es ...
-    }
-  } => {
-    act {
-      var $v = undefined, keys = Object.keys( $o ) ;
-      for (var j = 0; j < keys.length; j++) {
-        $v = keys [j];
-        $e ...
-      }
-      $es ...
-    }
-  }
-  rule {
-    {
-      for ( $a ... ; $b:expr ; $c ... ) $e:expr;
-      $es ...
-    }
-  } => {
-    act {
-      for ( $a ... ; $b ; $c ... ) {
-        $e;
-      }
-      $es ...
-    }
-  }
-  rule {
-    {
-      for ( $a ... ; $b:expr ; $c ... ) {
-        $e ...
-      }
-      $es ...
-    }
-  } => {
-    act {
-      $a ... ;
-      while ( $b ) {
-        $e ... 
-        $c ... 
-      }
-      $es ...
-    }
-  }
-  rule {
-    {
-      if ( $test:expr ) { $l ... } else $r:expr ;
-      $es ...
-    }
-  } => {
-    act {
-      if ( $test ) { $l ... } else { $r ; } 
-      $es ...
-    }
-  }
-  rule {
-    {
-      if ( $test:expr ) { $left ... } else { $right ... }
-      $es ...
-    }
-  } => {
-    mdo {
-      mif { act { $test } , act { $left ... } , act { $right ... } };
-      act { $es ... } ;
-    }
-  }
-  rule {
-    {
-      if ( $test:expr ) { $l ... }
-      $es ...
-    }
-  } => {
-    act {
-      if ( $test ) { $l ... } else {}
-      $es ...
-    }
-  }
-  rule {
-    {
-      if ( $test:expr ) $l:expr ; 
-      $es ...
-    }
-  } => {
-    act {
-      if ( $test ) { $l } 
-      $es ...
-    }
-  }
-  rule {
-    {
-      if ( $test:expr ) $l:expr else { $r ... }
-      $es ...
-    }
-  } => {
-    act {
-      if ( $test ) { $l } else { $r ... } 
-      $es ...
-    }
-  }
-  rule {
-    {
-      if ( $test:expr ) $l:expr else $r:expr ;
-      $es ...
-    }
-  } => {
-    act {
-      if ( $test ) { $l ; } else { $r ; } 
-      $es ...
-    }
-  }
-  rule {
-    {
-      try {
-        $b ...
-      } catch ( $ex:ident ) {
-        $h ...
-      }
-      $es ...
-    }
-  } => {
-    mdo {
-      mtry { act { $b ... } catch ( $ex ) act { $h ... } };
-      act { $es ... }
-    }
-  }
-  rule {
-    { 
-      throw $e:expr; 
-      $es ... 
-    }
-  } => {
-    mdo {
-      mfail ($e) ;
-      act { $es ... } ;
-    }
-  }
+  // standard expression composition 
   rule {
     { $e:expr ; $es ... }
   } => {
-    mdo {
-      mret ($e);
-      act { $es ... };
-    }
+    (action $e ) . then ( action { $es ... } )
   }
-}
-
-// # Fork
-// simple wrapper around the `act` macro that runs the built monad directly.
-macro fork {
+  // empty
   rule {
-    { $e ... }
+    {}
   } => {
-    ( act { $e ... } ) . run ();
+    core.undef
+  }
+  // single line 
+  rule {
+    { $e:lit }
+  } => {
+    action $e;
+  }
+  rule {
+    { $e:ident }
+  } => {
+    action $e;
+  }
+  rule {
+    { $e:expr }
+  } => {
+    action $e;
+  }
+  // basic expression
+  rule {
+    $e:lit
+  } => {
+    core.retU($e)
+  }
+  rule {
+    $e:ident
+  } => {
+    core.retU($e)
+  }
+  rule {
+    $e:expr
+  } => {
+    core.ret( function () { return $e ; } )
   }
 }
 
-export mdo;
-export act;
-export fork;
+export action;

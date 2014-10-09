@@ -50,7 +50,15 @@ var initial_fail = function (e, cont, active) {
 // model makes this unique in any case, is not a problem using an ephemeral queue
 // implementation, like the classical `LinkedListQueue`.
 Action.prototype.run = function () {
-  return this.take(initial_continuation, initial_fail, new Queue()).jump();
+  var end = mvar();
+  return this
+    .bind(function(v) {
+      return end.push(v);
+    }) 
+    .take(initial_continuation, 
+          initial_fail, 
+          new Queue())
+    .jump();
 };
 
 // ### Bind
