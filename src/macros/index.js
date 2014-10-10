@@ -1,11 +1,55 @@
+// -*- mode: js -*-
 
 macro action {
+  // while
+  rule {
+    { while ( $t:expr ) $b:expr ; }
+  } => {
+    _cojs. while_ ( action { $t } , action { $b } )
+  }
+  rule {
+    { while ( $t:expr ) $b:expr ; $es ...}
+  } => {
+    _cojs.while_ ( action { $t }, action { $b } ) . then ( action { $es ... } )
+  }
+  rule {
+    { while ( $t:expr ) { $b ... } }
+  } => {
+    _cojs.while_ ( action { $t }, action { $b ... } )
+  }
+  rule {
+    { while ( $t:expr ) { $b ... } $es ...}
+  } => {
+    _cojs.while_ ( action { $t }, action { $b ... } ) . then ( action { $es ... } )
+  }
+  // do while 
+  rule {
+    { do { $b ... } while ( $t:expr ) ; }
+  } => {
+    _cojs.do_ ( action { $b ... } , action { $t } )
+  }
 
+  rule {
+    { do { $b ... } while ( $t:expr ) ; $es ... }
+  } => {
+    _cojs.do_ ( action { $b ... } , action { $t } ) . then ( action { $es ... } )
+  }
+
+  rule {
+    { do $b:expr while ( $t:expr ) ; }
+  } => {
+    _cojs.do_ ( action { $b } , action { $t } )
+  }
+  rule {
+    { do $b:expr while ( $t:expr ) ; $es ... }
+  } => {
+    _cojs.do_ ( action { $b } , action { $t } ) . then ( action { $es ... } )
+  }
   // if
   rule {
     { if ( $t:expr ) { $l ... } else { $r ... } }
   } => {
-    core.if_ ( action ( $t ) , action { $l ... } , action { $r ... } )
+    _cojs.if_ ( action ( $t ) , action { $l ... } , action { $r ... } )
   }
   rule {
     { if ( $t:expr ) { $l ... } else { $r ... } $es ... }
@@ -16,7 +60,7 @@ macro action {
   rule {
     { if ( $t:expr ) { $l ... } else $r:expr ; }
   } => {
-    core.if_ ( action ( $t ) , action { $l ... } , action $r  )
+    _cojs.if_ ( action ( $t ) , action { $l ... } , action $r  )
   }
   rule {
     { if ( $t:expr ) { $l ... } else $r:expr ; $es ... }
@@ -27,7 +71,7 @@ macro action {
   rule {
     { if ( $t:expr ) $l:expr ; else { $r ... } }
   } => {
-    core.if_ ( action ( $t ) , action ( $l ) , action { $r ... }  )
+    _cojs.if_ ( action ( $t ) , action ( $l ) , action { $r ... }  )
   }
   rule {
     { if ( $t:expr ) $l:expr; else { $r ... } $es ... }
@@ -38,7 +82,7 @@ macro action {
   rule {
     { if ( $t:expr ) $l:expr ; else $r:expr ; }
   } => {
-    core.if_ ( action ( $t ) , action ( $l ) , action $r  )
+    _cojs.if_ ( action ( $t ) , action ( $l ) , action $r  )
   }
   rule {
     { if ( $t:expr ) $l:expr; else $r:expr ; $es ... }
@@ -49,7 +93,7 @@ macro action {
   rule {
     { if ( $t:expr ) $l:expr ; }
   } => {
-    core.if_ ( action ( $t ) , action ( $l )  )
+    _cojs.if_ ( action ( $t ) , action ( $l )  )
   }
 
   rule {
@@ -61,7 +105,7 @@ macro action {
   rule {
     { if ( $t:expr ) { $l ... } }
   } => {
-    core.if_ ( action ( $t ) , action { $l ... }  )
+    _cojs.if_ ( action ( $t ) , action { $l ... }  )
   }
   rule {
     { if ( $t:expr ) { $l ... } $es ... }
@@ -77,9 +121,9 @@ macro action {
   // 
   // it is used to send a message to a channel.
   // This section contains lot of repetitions for `:lit` and `:ident` because 
-  // these can be optimized without boxing them in a `core.ret` statement.
+  // these can be optimized without boxing them in a `_cojs.ret` statement.
 
-  // simple put with column
+  // single `put` with column
   rule {
     { $m:lit ~> $c:ident ; }
   } => {
@@ -111,7 +155,7 @@ macro action {
     action { $m ~> $c }
   }
 
-  // put with something afterward
+  // `put` with something afterward
   rule {
     { $m:lit ~> $c:ident ; $es ... }
   } => {
@@ -143,7 +187,7 @@ macro action {
     action { $m ~> $c } . then ( action { $es ... } )
   }
 
-  // simple put expression
+  // single `put` expression without semicolumn
   rule {
     { $m:lit ~> $c:ident }
   } => {
@@ -302,40 +346,59 @@ macro action {
   rule {
     {}
   } => {
-    core.undef
+    _cojs.undef
   }
-  // single line 
+  // single expression without semicolumn
   rule {
     { $e:lit }
   } => {
-    action $e;
+    // _cojs.retU ( $e )
+    action $e
   }
   rule {
     { $e:ident }
   } => {
-    action $e;
+    // _cojs.retU ( $e )
+    action $e
   }
   rule {
     { $e:expr }
   } => {
-    action $e;
+    // _cojs.ret ( function () { return $e } );
+    action $e
   }
-  // basic expression
+  // single expression without the {} brackets
   rule {
     $e:lit
   } => {
-    core.retU($e)
+    _cojs.retU($e)
   }
   rule {
     $e:ident
   } => {
-    core.retU($e)
+    _cojs.retU($e)
   }
   rule {
     $e:expr
   } => {
-    core.ret( function () { return $e ; } )
+    _cojs.ret( function () { return $e ; } )
+  }
+}
+
+// # Fork
+// simple wrapper around the `action` macro that runs the built monad directly.
+macro fork {
+  rule {
+    { $e ... }
+  } => {
+    ( action { $e ... } ) . run ();
+  }
+  rule {
+    e:expr
+  } => {
+    ( action $e ) . run ();
   }
 }
 
 export action;
+export fork;

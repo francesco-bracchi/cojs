@@ -67,7 +67,7 @@ var while_ = function (t, b) {
   return loop ();
 };
 
-var do_ = function (t, b) {
+var do_ = function (b, t) {
   return b.then(while_(t, b));
 };
 
