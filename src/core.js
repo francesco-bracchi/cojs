@@ -51,6 +51,20 @@ var fail = function (fun) {
   });
 };
 
+// ### Fail Unboxed
+// the same of fail except err is supposed to be an unboxed value
+var failU = function (err) {
+  return new Action (function (cont, fail, active) {
+    return new Trampoline(function () {
+      try {
+        return fail (err, cont, active);
+      } catch (e) {
+        return fail (e, cont, active);
+      }
+    });
+  });
+};
+
 var if_ = function (t, l, r) {
   if (r === undefined) 
     r = retU();
@@ -78,5 +92,6 @@ module.exports = {
   if_: if_,
   undef: undef,
   while_: while_,
-  do_: do_
+  do_: do_,
+  finally_: finally_
 };

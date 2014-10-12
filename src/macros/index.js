@@ -1,99 +1,262 @@
 // -*- mode: js -*-
 
 macro action {
+  // missing the first statement   
+  rule {
+    { for ( ; $t:expr ; $s:expr ) $es ... }
+  } => {
+    action { for (undefined ; $t ; $s ) $es ... }
+  }
+  // missing the second statement   
+  rule {
+    { for ( $i:expr ; ; $s:expr ) $es ... }
+  } => {
+    action { for ($i ; true ; $s ) $es ... }
+  }
+  rule {
+    { for ( var $v:ident = $i:expr ; ; $s:expr ) $es ... }
+  } => {
+    action { for (var $v = $i ; true ; $s ) $es ... }
+  }
+  // missing the third statement   
+  rule {
+    { for ( $i:expr ; $t:expr ; ) $es ... }
+  } => {
+    action { for ($i ; $t ; undefined ) $es ... }
+  }
+  rule {
+    { for ( var $v:ident = $i:expr ; $t:expr ; ) $es ... }
+  } => {
+    action { for (var $v = $i ; $t ; undefined ) $es ... }
+  }
+  // missing the first and second statements
+  rule {
+    { for ( ; ; $s:expr ) $es ... }
+  } => {
+    action { for (undefined ; true ; $s ) $es ... }
+  }
+  // missing the first and third statements
+  rule {
+    { for ( ; $t:expr ; ) $es ... }
+  } => {
+    action { for (undefined ; $t ; undefined ) $es ... }
+  }
+  // missing the second and third statements
+  rule {
+    { for ( $i:expr ; ; ) $es ... }
+  } => {
+    action { for ($i ; true ; undefined ) $es ... }
+  }
+  rule {
+    { for ( var $v:ident = $i:expr ; ; ) $es ... }
+  } => {
+    action { for (var $v = $i ; true ; undefined ) $es ... }
+  }
+  // missing the 3 statements
+  rule {
+    { for ( ; ; ) $es ... }
+  } => {
+    action { for (undefined ; true ; undefined ) $es ... }
+  }
+  // for statement with all the components
+  rule {
+    { for ( $i:expr ; $t:expr ; $s:expr ) { $e ... } }
+  } => {
+    action {
+      $i ;
+      while ( $t ) { $s ; $e ... }
+    }
+  }
+  rule {
+    { for ( var $u:ident = $i ; $t:expr ; $s:expr ) { $e ... } }
+  } => {
+    action {
+      var $u = $i;
+      while ( $t ) { $s ; $e ... }
+    }
+  }
+  rule {
+    { for ( $i:expr ; $t:expr ; $s:expr ) { $e ... } $es ...}
+  } => {
+    ( action { for ( $i ; $t ; $s ) { $e ...} } ) . then (action { $es ... } )
+  }
+  rule {
+    { for ( var $u:ident = $i ; $t:expr ; $s:expr ) { $e ... } $es ... }
+  } => {
+    ( action { for ( var $u = $i ; $t ; $s ) { $e ... } } ) . then ( action { $es ... } )
+  }
+  rule {
+    { for ( $i:expr ; $t:expr ; $s:expr ) $e:expr ; }
+  } => {
+    action {
+      $i ;
+      while ( $t ) { $s ; $e }
+    }
+  }
+  rule {
+    { for ( var $u:ident = $i:expr ; $t:expr ; $s:expr ) $e:expr ; }
+  } => {
+    action {
+      var $u = $i;
+      while ( $t ) { $s ; $e }
+    }
+  }
+  rule {
+    { for ( $i:expr ; $t:expr ; $s:expr ) $e:expr ; $es ...}
+  } => {
+    ( action { for ( $i ; $t ; $s ) $e ; } ) . then (action { $es ... } )
+  }
+  rule {
+    { for ( var $u:ident = $i:expr ; $t:expr ; $s:expr ) $e:expr ; $es ... }
+  } => {
+    ( action { for ( var $u = $i ; $t ; $s ) $e ; } ) . then ( action { $es ... } )
+  }
+  // throw
+  rule {
+    { throw $e:lit ; }
+  } => {
+    _cojs.fail ( $e ) 
+  }
+  rule {
+    { throw $e:ident ; }
+  } => {
+    _cojs.fail ( $e ) 
+  }
+  rule {
+    { throw $e:expr ; }
+  } => {
+    _cojs.failU ( $e ) 
+  }
+  rule {
+    { throw $e:lit ; $es ... }
+  } => {
+    action { throw $e ; }
+  }
+  rule {
+    { throw $e:ident ; $es ... }
+  } => {
+    action { throw $e ; }
+  }
+  rule {
+    { throw $e:expr ; $es ... }
+  } => {
+    action { throw $e ; }
+  }
+  // try/catch/finally
+  rule {
+    { try { $b ... } finally { $f ... } }
+  } => {
+    ( action { $b ... } ) . _finally_ ( action { $f ... } )
+  }
+  rule {
+    { try { $b ... } catch ( $e:ident) { $c ... } }
+  } => {
+    ( action { $b ... } ) . error ( function ( $e ) { return action { $c ... } ; } )
+  }
+  rule {
+    { try { $b ... } catch ( $e:ident) { $c ... } finally { $f ... } }
+  } => {
+    ( action { try { $b ... } catch ( $e ) { $c ... } } ). _finally_ ( action { $f ... } )
+  }
+
   // while
   rule {
     { while ( $t:expr ) $b:expr ; }
   } => {
-    _cojs. while_ ( action { $t } , action { $b } )
+    ( action { $b } ) . _while_ (action { $t } )
   }
   rule {
     { while ( $t:expr ) $b:expr ; $es ...}
   } => {
-    _cojs.while_ ( action { $t }, action { $b } ) . then ( action { $es ... } )
+    ( action { while ( $t ) $b ; } ) . then ( action { $es ... } )
   }
   rule {
     { while ( $t:expr ) { $b ... } }
   } => {
-    _cojs.while_ ( action { $t }, action { $b ... } )
+    ( action { $b ... } ) . _while_ ( action { $t } )
   }
   rule {
     { while ( $t:expr ) { $b ... } $es ...}
   } => {
-    _cojs.while_ ( action { $t }, action { $b ... } ) . then ( action { $es ... } )
+    ( action { while ( $t ) { $b ... } } ) . then ( action { $es ... } )
   }
   // do while 
   rule {
+    { do { $b ... } while ( $t:expr ) }
+  } => {
+    ( action { $b ... } ) . _do_while_ ( action { $t } )
+  }
+  rule {
     { do { $b ... } while ( $t:expr ) ; }
   } => {
-    _cojs.do_ ( action { $b ... } , action { $t } )
+    action { do { $b ... } while ( $t ) }
   }
 
   rule {
     { do { $b ... } while ( $t:expr ) ; $es ... }
   } => {
-    _cojs.do_ ( action { $b ... } , action { $t } ) . then ( action { $es ... } )
+    ( action { do { $b ... } while ( $t ) ; } ) . then ( action { $es ... } )
   }
 
   rule {
     { do $b:expr while ( $t:expr ) ; }
   } => {
-    _cojs.do_ ( action { $b } , action { $t } )
+    ( action { $b } ) . _do_while_ ( action { $t } )
   }
   rule {
     { do $b:expr while ( $t:expr ) ; $es ... }
   } => {
-    _cojs.do_ ( action { $b } , action { $t } ) . then ( action { $es ... } )
+    ( action { do $b while ( $t ) ; } ) . then ( action { $es ... } )
   }
   // if
   rule {
     { if ( $t:expr ) { $l ... } else { $r ... } }
   } => {
-    _cojs.if_ ( action ( $t ) , action { $l ... } , action { $r ... } )
+    ( action { $t } ) . _if_ ( action { $l ... } , action { $r ... } )
   }
   rule {
     { if ( $t:expr ) { $l ... } else { $r ... } $es ... }
   } => {
-    action { if ( $t ) { $l ... } else { $r ... }  } . then ( action { $es ... } )
+    ( action { if ( $t ) { $l ... } else { $r ... }  } ) . then ( action { $es ... } )
   }
 
   rule {
     { if ( $t:expr ) { $l ... } else $r:expr ; }
   } => {
-    _cojs.if_ ( action ( $t ) , action { $l ... } , action $r  )
+    ( action { $t } ) . _if_ ( action { $l ... } , action { $r } )
   }
   rule {
     { if ( $t:expr ) { $l ... } else $r:expr ; $es ... }
   } => {
-    action { if ( $t ) { $l ... } else $r ; } . then ( action { $es ... } )
+    ( action { if ( $t ) { $l ... } else $r ; } ) . then ( action { $es ... } )
   }
 
   rule {
     { if ( $t:expr ) $l:expr ; else { $r ... } }
   } => {
-    _cojs.if_ ( action ( $t ) , action ( $l ) , action { $r ... }  )
+    ( action { $t } ) . _if_ ( action { $l }, action { $r ... } )
   }
   rule {
     { if ( $t:expr ) $l:expr; else { $r ... } $es ... }
   } => {
-    action { if ( $t ) $l ; else { $r ... }  } . then ( action { $es ... } )
+    ( action { if ( $t ) $l ; else { $r ... } } ) . then ( action { $es ... } )
   }
 
   rule {
     { if ( $t:expr ) $l:expr ; else $r:expr ; }
   } => {
-    _cojs.if_ ( action ( $t ) , action ( $l ) , action $r  )
+    ( action { $t } ) . _if_ ( action { $l } , action { $r } )
   }
   rule {
     { if ( $t:expr ) $l:expr; else $r:expr ; $es ... }
   } => {
-    action { if ( $t ) $l ; else $r ;  } . then ( action { $es ... } )
+    ( action { if ( $t ) $l ; else $r ; } ) . then ( action { $es ... } )
   }
 
   rule {
     { if ( $t:expr ) $l:expr ; }
   } => {
-    _cojs.if_ ( action ( $t ) , action ( $l )  )
+    ( action { $t } ) . _when_ ( action { $l } )
   }
 
   rule {
@@ -105,12 +268,12 @@ macro action {
   rule {
     { if ( $t:expr ) { $l ... } }
   } => {
-    _cojs.if_ ( action ( $t ) , action { $l ... }  )
+    ( action { $t } ) . _when_ ( action { $l ... } )
   }
   rule {
     { if ( $t:expr ) { $l ... } $es ... }
   } => {
-    action { if ( $t ) { $l ... } }. then ( action { $es ... } ) 
+    ( action { if ( $t ) { $l ... } } ) . then ( action { $es ... } ) 
   }
   
   // ## Put
@@ -159,32 +322,32 @@ macro action {
   rule {
     { $m:lit ~> $c:ident ; $es ... }
   } => {
-    action { $m ~> $c } . then ( action { $es ... } )
+    ( action { $m ~> $c } ) . then ( action { $es ... } )
   }
   rule {
     { $m:lit ~> $c:expr ; $es ...}
   } => {
-    action { $m ~> $c } . then ( action { $es ... } )
+    ( action { $m ~> $c } ) . then ( action { $es ... } )
   }
   rule {
     { $m:ident ~> $c:ident ; $es ...}
   } => {
-    action { $m ~> $c } . then ( action { $es ... } )
+    ( action { $m ~> $c } ) . then ( action { $es ... } )
   }
   rule {
     { $m:ident ~> $c:expr ; $es ...}
   } => {
-    action { $m ~> $c } . then ( action { $es ... } )
+    ( action { $m ~> $c } ) . then ( action { $es ... } )
   }
   rule {
     { $m:expr ~> $c:ident ; $es ...}
   } => {
-    action { $m ~> $c } . then ( action { $es ... } )
+    ( action { $m ~> $c } ) . then ( action { $es ... } )
   }
   rule {
     { $m:expr ~> $c:expr ; $es ...}
   } => {
-    action { $m ~> $c } . then ( action { $es ... } )
+    ( action { $m ~> $c } ) . then ( action { $es ... } )
   }
 
   // single `put` expression without semicolumn
@@ -245,17 +408,17 @@ macro action {
   rule {
     { var $v:ident = $e:lit ; $es ... }
   } => {
-    ( action $e ) . bind ( function ( $v ) { return action { $es ... } ; } )
+    ( action { $e } ) . bind ( function ( $v ) { return action { $es ... } ; } )
   }
   rule {
     { var $v:ident = $e:ident ; $es ... }
   } => {
-    ( action $e ) . bind ( function ( $v ) { return action { $es ... } ; } )
+    ( action { $e } ) . bind ( function ( $v ) { return action { $es ... } ; } )
   }
   rule {
     { var $v:ident = $e:expr ; $es ... }
   } => {
-    ( action $e ) . bind ( function ( $v ) { return action { $es ... } ; } )
+    ( action { $e } ) . bind ( function ( $v ) { return action { $es ... } ; } )
   }
   rule {
     { var $v:ident = $e , $es ... }
@@ -318,70 +481,49 @@ macro action {
       $es ...
     }
   } 
-
   // single expression that ends with ;
   rule {
     { $e:lit ; }
   } => {
-    action $e
+     action { $e }
   }
   rule {
     { $e:ident ; }
   } => {
-    action $e
+    action { $e }
   }
   rule {
     { $e:expr ; }
   } => {
-    action $e
+    action { $e }
   }
-
+  // single expression without semicolumn
+  rule {
+    { $e:lit }
+  } => {
+    _cojs . retU ( $e )
+  }
+  rule {
+    { $e:ident }
+  } => {
+    _cojs . retU ( $e )
+  }
+  rule {
+    { $e:expr }
+  } => {
+    _cojs . ret ( function () { return $e ; } )
+  }
   // standard expression composition 
   rule {
     { $e:expr ; $es ... }
   } => {
-    (action $e ) . then ( action { $es ... } )
+    (action { $e } ) . then ( action { $es ... } )
   }
   // empty
   rule {
     {}
   } => {
     _cojs.undef
-  }
-  // single expression without semicolumn
-  rule {
-    { $e:lit }
-  } => {
-    // _cojs.retU ( $e )
-    action $e
-  }
-  rule {
-    { $e:ident }
-  } => {
-    // _cojs.retU ( $e )
-    action $e
-  }
-  rule {
-    { $e:expr }
-  } => {
-    // _cojs.ret ( function () { return $e } );
-    action $e
-  }
-  // single expression without the {} brackets
-  rule {
-    $e:lit
-  } => {
-    _cojs.retU($e)
-  }
-  rule {
-    $e:ident
-  } => {
-    _cojs.retU($e)
-  }
-  rule {
-    $e:expr
-  } => {
-    _cojs.ret( function () { return $e ; } )
   }
 }
 
@@ -392,11 +534,6 @@ macro fork {
     { $e ... }
   } => {
     ( action { $e ... } ) . run ();
-  }
-  rule {
-    e:expr
-  } => {
-    ( action $e ) . run ();
   }
 }
 
