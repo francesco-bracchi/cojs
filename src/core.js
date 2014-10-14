@@ -65,33 +65,10 @@ var failU = function (err) {
   });
 };
 
-var if_ = function (t, l, r) {
-  if (r === undefined) 
-    r = retU();
-
-  return t.bind (function (t0) { return t ? l : r; });
-};
-
-var while_ = function (t, b) {
-  var loop = function () {
-    return t.bind (function (t0) { 
-      return t0 ? b.bind(loop) : undef;
-    });
-  };
-  return loop ();
-};
-
-var do_ = function (b, t) {
-  return b.then(while_(t, b));
-};
-
 module.exports = {
   ret: ret,
   retU: retU,
   fail: fail,
-  if_: if_,
-  undef: undef,
-  while_: while_,
-  do_: do_,
-  finally_: finally_
+  failU: failU,
+  undef: undef
 };

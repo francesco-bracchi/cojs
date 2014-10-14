@@ -2,8 +2,8 @@
 
 var proxy = function (m, o) {
   fork {
-    var x = ?m;
-    o! x;
+    var x <~ m;
+    o ~> x;
   }
 };
 

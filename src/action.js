@@ -28,7 +28,6 @@
 // success thunk and again the queue of active coroutines.
 
 var Trampoline = require ('./trampoline'),
-    mvar = require ('./mvar'),
     Queue = require ('./linkedListQueue');
 
 var Action = function (take) {
@@ -55,12 +54,8 @@ var initial_fail = function (e, cont, active) {
 // Actually this queue should be a functional object, but since the execution
 // model makes this unique in any case, is not a problem using an ephemeral queue
 // implementation, like the classical `LinkedListQueue`.
-Action.prototype.run = function () {
-  var end = mvar();
+Action.prototype.run = function (end) {
   return this
-    .bind(function(v) {
-      return end.put(v);
-    }) 
     .take(initial_continuation, 
           initial_fail, 
           new Queue())

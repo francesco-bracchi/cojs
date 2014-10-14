@@ -96,3 +96,10 @@ Mvar.prototype.alt = function (n) {
 module.exports = function (val) {
   return new Mvar(val);
 };
+
+Action.prototype.runVar = function () {
+  var end = new Mvar();
+  this.bind(function (v) { 
+    return end.put(v);
+  }).run();
+}

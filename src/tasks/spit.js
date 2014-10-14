@@ -7,7 +7,7 @@ var spit = function (path, data, options) {
   return with_mvar(function (mv) {
     fs.writeFile(path, data, options, function (err) {
       if (! err) {
-      fork { mv ! true }
+      fork { mv ~> true ; }
       }
     });
   });

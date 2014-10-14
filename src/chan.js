@@ -5,9 +5,9 @@
 // value. 
 // the only blocking operation is `take` when the queue is empty.
 
-
 var mvar = require("./mvar"),
-    alt = require ("./alt");
+    alt = require ("./alt"),
+    core = require ('./index');
 
 var Chan = function () {
   var hole = mvar();
@@ -17,18 +17,18 @@ var Chan = function () {
 
 var put = function (chan, val) {
   var newHole = mvar();
-  return act {
-    val oldHole = ? chan.putVar;
-    chan.putVar ! newHole;
-    oldHole ! [val, newHole];
+  return action {
+    var oldHole <~ chan.putVar;
+    chan.putVar ~> newHole;
+    oldHole ~> [val, newHole];
   };
 };
 
 var take = function (chan) {
-  return act {
-    val tail = ?chan.takeVar;
-    val pair = ?tail;
-    chan.takeVar ! pair[1];
+  return action {
+    var tail <~ chan.takeVar;
+      var pair <~ tail;
+    chan.takeVar ~> pair[1];
     pair[0];
   };
 };

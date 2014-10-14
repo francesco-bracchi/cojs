@@ -27,7 +27,7 @@
     "sweet.js": "~0.7.1",
     "gulp": "~3.5.1",
     "gulp-util": "~2.2.14",
-    "gulp-sweetjs": "~0.2.2",
+    "gulp-sweetjs": "~0.5.4",
     "gulp-clean": "~0.2.4",
     "gulp-frep": "~0.1.0",
     "event-stream": "~3.1.0",

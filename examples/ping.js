@@ -8,20 +8,20 @@ var mvar = require ('../src/mvar'),
 
 fork {
   for (var x = 0; x < max; x++) {
-    val m = ?m0;
+    var m <~m0;
     console.log ('ping ' + m);
-    m1 ! m + 1;
+    m+1 ~> m1;
   }
 }
 
 fork {
   while (true) {
-    val m = ?m1;
+    var m <~ m1;
     console.log ('pong ' + m);
-    m0 ! m+1;
+    m+1 ~> m0;
   }
 }
 
 console.log ('start');
-fork { m0 ! 0; }
+fork { 0 ~> m0; }
 console.log ('end');

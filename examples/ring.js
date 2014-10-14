@@ -15,7 +15,6 @@ var time = function (fun) {
   var c = fun();
   var t = now();
   return (t - t0);
-  return c;
 };
 
 var main = function (n0, m0) {
@@ -32,8 +31,8 @@ var main = function (n0, m0) {
     channels[j] = ch;
     fork {
       while (m < m0) {
-        val k = ?ch;
-        neighbor(j) ! k;
+        var k <~ ch;
+        k ~> neighbor(j);
         m++;
       }
     };
@@ -45,7 +44,7 @@ var main = function (n0, m0) {
   });
   console.log('processes initialized in ' + init_t + 'ms (' + (1000 * init_t / n ) + 'μs per process)');
   var exec_t = time (function () {
-    fork { channels[0] ! "go" }
+    fork { 'go' ~> channels[0]; }
   });
   console.log('process run in ' + exec_t + 'ms (' + 1000 * exec_t / (m * n) + 'μs per message)');
 };

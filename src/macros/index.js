@@ -1,6 +1,77 @@
 // -*- mode: js -*-
 
+macro syntax_error {
+  case { 
+    _ $e:lit
+  } => {
+    throw new Error(#{$e}[0].token.value);
+  }
+}
 macro action {
+  // not supported keywords (return, break, continue)
+  rule {
+    { return $e:expr ; $es ... }
+  } => {
+    syntax_error 'return is not allowed in a fork block';
+  }
+  rule {
+    { return ; $es ... }
+  } => {
+    action { 
+      return undefined; 
+      $es ...
+    }
+  }
+  rule {
+    { break $e:ident ; $es ... }
+  } => {
+    syntax_error 'break is not allowed in a fork block';
+  }
+  rule {
+    { break ; $es ... }
+  } => {
+    action {
+      break last ; 
+      $es ...
+    }
+  }
+  rule {
+    { continue $e:ident ; $es ... }
+  } => {
+    syntax_error 'continue is not allowed in a fork block';
+  }
+  rule {
+    { continue ; $es ... }
+  } => {
+    action {
+      continue last ; 
+      $es ...
+    }
+  }
+
+  rule {
+    { switch $es ... }
+  } => {
+    syntax_error 'switch is not allowed in a fork block';
+  }
+  // for (var name in object)
+  rule {
+    { for ( var $i:ident in $o ) $e:expr ; $es ... }
+  } => {
+    action { for ( var $i in $o ) { $e ; } $es ... }
+  }
+  rule {
+    { for ( var $i:ident in $o ) { $e ... } $es ... }
+  } => {
+    action { 
+        var $i = undefined, keys = Object.keys($o);
+        for (var j = 0; j < keys.length; j++) {
+          $i = keys[j];
+          $e ...
+        }
+        $es ...
+    }
+  }
   // missing the first statement   
   rule {
     { for ( ; $t:expr ; $s:expr ) $es ... }
@@ -533,9 +604,10 @@ macro fork {
   rule {
     { $e ... }
   } => {
-    ( action { $e ... } ) . run ();
+    ( action { $e ... } ) . runVar ();
   }
 }
 
 export action;
 export fork;
+export syntax_error;

@@ -12,7 +12,7 @@ Trampoline.prototype.jump = function () {
   // while (f instanceof Trampoline) {
   //   f = f.bounce();
   // };
-  while (f.bounce) {
+  while (f && f.bounce) {
     f = f.bounce();
   }
   return f;

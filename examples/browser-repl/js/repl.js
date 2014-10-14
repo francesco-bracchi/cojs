@@ -20,7 +20,7 @@ var registerKeypress = function () {
     else {
       ch = String.fromCharCode(e.charCode);
     }
-    fork { chars ! ch }
+    fork { chars ~> ch; }
   });
 };
 
@@ -51,9 +51,9 @@ var echo = function (c, dom) {
 var getChar = function (dom) {
   var v = mvar();
   fork { 
-    val c = ? chars;
+    var c <~ chars;
     echo (c, dom);
-    v ! c;
+    v ~> c;
   }
   return v;
 };
@@ -64,10 +64,10 @@ var getLine = function (dom) {
       c = null;
   fork {
     do {
-      c = ?getChar(dom);
+      c <~ getChar(dom);
       s = c === "\b" ? s.substring(0, s.length - 1) : s + c;
     } while (c !== "\n"); 
-    v ! s;
+    v ~> s;
   }
   return v;
 }
@@ -88,10 +88,10 @@ var read = function () {
       dom = block('read');
   fork {
     do {
-      c = ? getLine(dom);
+      c <~ getLine(dom);
       s += c;
     } while (!isBalanced(s));
-    v ! s;
+    v ~> s;
   }
   return v;
 };
@@ -109,7 +109,7 @@ var error = function (e) {
 var repl = function () {
   fork {
     while (true) {
-      val s = ?read();
+      var s <~ read();
       try {
         print(eval(s));
       } catch (e) {

@@ -7,7 +7,7 @@ This Library is heavily inspired by
 and the Haskell mvars;
 
 **This library doesn't make use generators or promises, but a walker is implemented, that
-rewrites fork blocks, thanks to [sweetjs](http://sweetjs.org/) macros**
+rewrites fork blocks, thanks to [sweetjs](http://sweetjs.org/) macro system**
 
 # Install
 
@@ -35,33 +35,49 @@ Install [sweetjs](http://sweetjs.org/)
 
     fork {
       while (true) {
-        val v = ?ch;
+        val v <~ ch;
         console.log ('received 1: ' + v);
       }
     }
 
     fork { 
       while (true) {
-        val v = ?ch;
+        val v <~ ch;
         console.log ('received 2: ' + v);
       }
     }
 
     fork {
       while (n < m) {
-        ch ! n;
+        ch ~> n;
         console.log ('sent: ' + n);
         n++;
-      }
-    }
+      } 
+    } 
 
 Some more examples are implemented in the /examples dir
+
+## modules
+
+### cojs/mvar
+
+### cojs/chan 
+
+### cojs/throwErr
+wrapper around a channel that throws an error if the returned value is an `instanceof Error`
+
+### tasks
+
+#### cojs/tasks/timeout
+
+#### cojs/tasks/split
+
+#### cojs/tasks/slurp
 
 # TODO
 
 ## features to be completed
 
-1. enable switch statement support in act expressions
-1. enable continue/break in act expressions
-1. enable finally clause in try expressions.
+1. enable switch statement support in action expressions
+1. enable continue/break in action expressions
 1. **test**, **test**, **test**

@@ -6,7 +6,7 @@ var timeout = function (ms, val) {
   if (val === undefined) val = null;
   return with_mvar (function (mv) {
     setTimeout (function () {
-      fork { mv ! val; }
+      fork { mv ~> val; }
     }, ms);
   });
 };
