@@ -80,4 +80,6 @@ wrapper around a channel that throws an error if the returned value is an `insta
 
 1. enable switch statement support in action expressions
 1. enable continue/break in action expressions
+1. wrap all `_while_`, `_finally_` ... second arguments in a function.
+   this is needed because the content has to be evaluated at the `run` time
 1. **test**, **test**, **test**

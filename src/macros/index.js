@@ -7,6 +7,52 @@ macro syntax_error {
     throw new Error(#{$e}[0].token.value);
   }
 }
+
+macro _while_ {
+  rule {
+    ( $test:expr , $body:expr )
+  } => {
+    ( function loop () {
+      return ( $test ) . bind ( function ( t ) {
+        return t ? ( $body ) . bind (loop) : _cojs . undef ;
+      } ) ;
+    } () )
+  }
+}
+
+macro _do_while_ {
+  rule {
+    ( $body:expr , $test:expr)
+  } => {
+    function loop () {
+      return ( $body ) . bind ( function () {
+        return ( $test ) . bind (function ( t ) {
+          return t ? loop () : _cojs . undef ;
+        } ) ;
+      } );
+    } () 
+  }
+}
+
+macro _bind_ {
+  rule {
+    $v:ident = $e:expr in $b:expr
+  } => {
+    ( $e ) . bind ( function ( $v ) { return $b ; } );
+  }
+}
+macro _if_ {
+  rule {
+    ( $t:expr, $l:expr )
+  } => {
+    _if_ ( $t, $l, _cojs.undef )
+  }
+  rule {
+    ( $t:expr, $l:expr,  $r:expr )
+  } => {
+    ( $t ) . bind (function ( t ) { return t ? $l : $r ; } )
+  }
+}
 macro action {
   // not supported keywords (return, break, continue)
   rule {
@@ -149,12 +195,18 @@ macro action {
   rule {
     { for ( $i:expr ; $t:expr ; $s:expr ) { $e ... } $es ...}
   } => {
-    ( action { for ( $i ; $t ; $s ) { $e ...} } ) . then (action { $es ... } )
+    ( action { for ( $i ; $t ; $s ) { $e ...} } ) 
+      . bind ( function () { 
+        return action { $es ... } ; 
+      } )
   }
   rule {
     { for ( var $u:ident = $i ; $t:expr ; $s:expr ) { $e ... } $es ... }
   } => {
-    ( action { for ( var $u = $i ; $t ; $s ) { $e ... } } ) . then ( action { $es ... } )
+    ( action { for ( var $u = $i ; $t ; $s ) { $e ... } } ) 
+      . bind ( function () { 
+        return action { $es ... } ; 
+      } )
   }
   rule {
     { for ( $i:expr ; $t:expr ; $s:expr ) $e:expr ; }
@@ -175,12 +227,12 @@ macro action {
   rule {
     { for ( $i:expr ; $t:expr ; $s:expr ) $e:expr ; $es ...}
   } => {
-    ( action { for ( $i ; $t ; $s ) $e ; } ) . then (action { $es ... } )
+    ( action { for ( $i ; $t ; $s ) $e ; } ) . bind ( function ()  { return action { $es ... } ; } )
   }
   rule {
     { for ( var $u:ident = $i:expr ; $t:expr ; $s:expr ) $e:expr ; $es ... }
   } => {
-    ( action { for ( var $u = $i ; $t ; $s ) $e ; } ) . then ( action { $es ... } )
+    ( action { for ( var $u = $i ; $t ; $s ) $e ; } ) . bind ( function () { return action { $es ... } ; } )
   }
   // throw
   rule {
@@ -217,7 +269,7 @@ macro action {
   rule {
     { try { $b ... } finally { $f ... } }
   } => {
-    ( action { $b ... } ) . _finally_ ( action { $f ... } )
+    ( action { $b ... } ) . anyhow ( action { $f ... } )
   }
   rule {
     { try { $b ... } catch ( $e:ident) { $c ... } }
@@ -227,35 +279,35 @@ macro action {
   rule {
     { try { $b ... } catch ( $e:ident) { $c ... } finally { $f ... } }
   } => {
-    ( action { try { $b ... } catch ( $e ) { $c ... } } ). _finally_ ( action { $f ... } )
+    ( action { try { $b ... } catch ( $e ) { $c ... } } ) . anyhow ( action { $f ... } )
   }
 
   // while
   rule {
     { while ( $t:expr ) $b:expr ; }
   } => {
-    ( action { $b } ) . _while_ (action { $t } )
+    _while_ ( action { $t }, action { $b } )
   }
   rule {
     { while ( $t:expr ) $b:expr ; $es ...}
   } => {
-    ( action { while ( $t ) $b ; } ) . then ( action { $es ... } )
+    ( action { while ( $t ) $b ; } ) . bind ( function () { return action { $es ... } ; } )
   }
   rule {
     { while ( $t:expr ) { $b ... } }
   } => {
-    ( action { $b ... } ) . _while_ ( action { $t } )
+    _while_ ( action { $t }, action { $b ... } )
   }
   rule {
     { while ( $t:expr ) { $b ... } $es ...}
   } => {
-    ( action { while ( $t ) { $b ... } } ) . then ( action { $es ... } )
+    ( action { while ( $t ) { $b ... } } ) . bind ( function () { return action { $es ... } ; } )
   }
   // do while 
   rule {
     { do { $b ... } while ( $t:expr ) }
   } => {
-    ( action { $b ... } ) . _do_while_ ( action { $t } )
+    _do_while_ ( action { $b ... } , action { $t } )
   }
   rule {
     { do { $b ... } while ( $t:expr ) ; }
@@ -266,85 +318,85 @@ macro action {
   rule {
     { do { $b ... } while ( $t:expr ) ; $es ... }
   } => {
-    ( action { do { $b ... } while ( $t ) ; } ) . then ( action { $es ... } )
+    ( action { do { $b ... } while ( $t ) ; } ) . bind ( function () { return action { $es ... } ; } )
   }
 
   rule {
     { do $b:expr while ( $t:expr ) ; }
   } => {
-    ( action { $b } ) . _do_while_ ( action { $t } )
+    _do_while ( action { $b } , action { $t } )
   }
   rule {
     { do $b:expr while ( $t:expr ) ; $es ... }
   } => {
-    ( action { do $b while ( $t ) ; } ) . then ( action { $es ... } )
+    ( action { do $b while ( $t ) ; } ) . bind ( function () { return action { $es ... } ; } )
   }
   // if
   rule {
     { if ( $t:expr ) { $l ... } else { $r ... } }
   } => {
-    ( action { $t } ) . _if_ ( action { $l ... } , action { $r ... } )
+    _if_ ( action { $t }, action { $l ... } , action { $r ... } )
   }
   rule {
     { if ( $t:expr ) { $l ... } else { $r ... } $es ... }
   } => {
-    ( action { if ( $t ) { $l ... } else { $r ... }  } ) . then ( action { $es ... } )
+    ( action { if ( $t ) { $l ... } else { $r ... }  } ) . bind ( function () { return action { $es ... } ; } )
   }
 
   rule {
     { if ( $t:expr ) { $l ... } else $r:expr ; }
   } => {
-    ( action { $t } ) . _if_ ( action { $l ... } , action { $r } )
+    _if_ ( action { $t } , action { $l ... } , action { $r } )
   }
   rule {
     { if ( $t:expr ) { $l ... } else $r:expr ; $es ... }
   } => {
-    ( action { if ( $t ) { $l ... } else $r ; } ) . then ( action { $es ... } )
+    ( action { if ( $t ) { $l ... } else $r ; } ) . bind ( function () { return action { $es ... } ; } )
   }
 
   rule {
     { if ( $t:expr ) $l:expr ; else { $r ... } }
   } => {
-    ( action { $t } ) . _if_ ( action { $l }, action { $r ... } )
+    _if_ ( action { $t } , action { $l }, action { $r ... } )
   }
   rule {
     { if ( $t:expr ) $l:expr; else { $r ... } $es ... }
   } => {
-    ( action { if ( $t ) $l ; else { $r ... } } ) . then ( action { $es ... } )
+    ( action { if ( $t ) $l ; else { $r ... } } ) . bind ( function () { return action { $es ... } ; } )
   }
 
   rule {
     { if ( $t:expr ) $l:expr ; else $r:expr ; }
   } => {
-    ( action { $t } ) . _if_ ( action { $l } , action { $r } )
+    _if_ ( action { $t }, action { $l } , action { $r } )
   }
   rule {
     { if ( $t:expr ) $l:expr; else $r:expr ; $es ... }
   } => {
-    ( action { if ( $t ) $l ; else $r ; } ) . then ( action { $es ... } )
+    ( action { if ( $t ) $l ; else $r ; } ) . bind ( function () { return action { $es ... } ; } )
   }
 
   rule {
     { if ( $t:expr ) $l:expr ; }
   } => {
-    ( action { $t } ) . _when_ ( action { $l } )
+    _if_ ( action { $t } , action { $l } )
   }
 
   rule {
     { if ( $t:expr ) $l:expr ; $es ... }
   } => {
-    ( action { if ( $t ) $l ; } ) . then ( action { $es ... } )
+    ( action { if ( $t ) $l ; } ) . bind ( function () { return action { $es ... } ; } )
   }
 
   rule {
     { if ( $t:expr ) { $l ... } }
   } => {
-    ( action { $t } ) . _when_ ( action { $l ... } )
+    if ( action { $t } , action { $l ... } )
   }
   rule {
     { if ( $t:expr ) { $l ... } $es ... }
   } => {
-    ( action { if ( $t ) { $l ... } } ) . then ( action { $es ... } ) 
+    ( action { if ( $t ) { $l ... } } ) . bind ( function () { return action { $es ... } ; } ) 
   }
   
   // ## Put
@@ -393,32 +445,32 @@ macro action {
   rule {
     { $m:lit ~> $c:ident ; $es ... }
   } => {
-    ( action { $m ~> $c } ) . then ( action { $es ... } )
+    ( action { $m ~> $c } ) . bind ( function () { return action { $es ... } ; } )
   }
   rule {
     { $m:lit ~> $c:expr ; $es ...}
   } => {
-    ( action { $m ~> $c } ) . then ( action { $es ... } )
+    ( action { $m ~> $c } ) . bind ( function () { return action { $es ... } ; } )
   }
   rule {
     { $m:ident ~> $c:ident ; $es ...}
   } => {
-    ( action { $m ~> $c } ) . then ( action { $es ... } )
+    ( action { $m ~> $c } ) . bind ( function () { return action { $es ... } ; } )
   }
   rule {
     { $m:ident ~> $c:expr ; $es ...}
   } => {
-    ( action { $m ~> $c } ) . then ( action { $es ... } )
+    ( action { $m ~> $c } ) . bind ( function () { return action { $es ... } ; } )
   }
   rule {
     { $m:expr ~> $c:ident ; $es ...}
   } => {
-    ( action { $m ~> $c } ) . then ( action { $es ... } )
+    ( action { $m ~> $c } ) . bind ( function () { return action { $es ... } ; } )
   }
   rule {
     { $m:expr ~> $c:expr ; $es ...}
   } => {
-    ( action { $m ~> $c } ) . then ( action { $es ... } )
+    ( action { $m ~> $c } ) . bind ( function () { return action { $es ... } ; } )
   }
 
   // single `put` expression without semicolumn
@@ -496,7 +548,16 @@ macro action {
   } => {
     action { var $v = $e ; var $es ... }
   }
- 
+  rule {
+    { var $v:ident ; $es ... }
+  } => {
+    action { var $v = undefined ; $es ... }
+  }
+  rule {
+    { var $v:ident , $es ... }
+  } => {
+    action { var $v = undefined , $es ... }
+  }
   // ## Take
   // 
   // This is the second operator used to estract a value from a channel, 
@@ -522,7 +583,7 @@ macro action {
   rule {
     { var $v:ident <~ $e:expr ; $es ... }
   } => {
-    action { var e = $e, v <~ e; $es ... }
+    action { var e = $e, $v <~ e; $es ... }
   }
   rule {
     { var $v:ident <~ $e:ident , $es ... }
@@ -588,7 +649,7 @@ macro action {
   rule {
     { $e:expr ; $es ... }
   } => {
-    (action { $e } ) . then ( action { $es ... } )
+    (action { $e } ) . bind ( function () { return action { $es ... } ; } )
   }
   // empty
   rule {

@@ -64,14 +64,24 @@ Action.prototype.run = function (end) {
 
 // ### Bind
 // composes 2 monads
+// var bind = function (m, next) {
+//   return new Action (function (cont, fail, active) {
+//     var _cont = function (v, _fail, _active) {
+//       return new Trampoline(function () { 
+//         return next(v).take(cont, _fail, _active); 
+//       });
+//     };
+//     return m.take (_cont, fail, active);
+//   });
+// };
+
 var bind = function (m, next) {
   return new Action (function (cont, fail, active) {
-    var _cont = function (v, _fail, _active) {
+    return m.take (function (v, _fail, _active) {
       return new Trampoline(function () { 
         return next(v).take(cont, _fail, _active); 
       });
-    };
-    return m.take (_cont, fail, active);
+    }, fail, active);
   });
 };
 
@@ -100,14 +110,23 @@ var then = function (m, n) {
 // composes 2 monads alternativately, while bind imposes a sequential order, 
 // the error operator composes 2 monads in parallel, if the first fails, the 
 // second is executed (used to implement the `try{...} catch (e) {...}` block.
+// var error = function (m, handler) {
+//   return new Action (function (cont, fail, active) {
+//     var _fail = function (err, _cont, _active) {
+//       return new Trampoline(function () {
+//         return handler(err).take (_cont, fail, _active);
+//       });
+//     };
+//     return m.take(cont, _fail, active);
+//   });
+// };
 var error = function (m, handler) {
   return new Action (function (cont, fail, active) {
-    var _fail = function (err, _cont, _active) {
+    return m.take(cont, function (err, _cont, _active) {
       return new Trampoline(function () {
         return handler(err).take (_cont, fail, _active);
       });
-    };
-    return m.take(cont, _fail, active);
+    }, active);
   });
 };
 
@@ -184,65 +203,13 @@ var failU = function (err) {
   });
 };
 
-// extended combinators
-
-var _while_ = function (body, test) {
-  var loop = function (_) {
-    return test.bind (function (t) {
-      return t ? body.bind (loop) : undef;
-    });
-  };
-  return loop (undefined);
-};
-
-var _do_while_ = function (body, test) {
-  return body.then(_while_(test, body));
-};
-
-var _finally_ = function (body, clause) {
-  return body.error(function (err) { 
+// finally
+Action.prototype.anyhow = function (body, clause) {
+  return this.error(function (err) { 
     return clause.then(failU(err));
   }).bind (function (v) {
     return clause.then(retU(v));
   });
-};
-
-var _if_ = function (test, left, right) {
-  return test.bind (function (t) {
-    return t ? left : right;
-  });
-};
-
-var _when_ = function (test, action) {
-  return test._if_ (action, undef);
-};
-
-var _unless_ = function (test, action) {
-  return test._if_ (undef, action);
-};
-
-Action.prototype._while_ = function (test) {
-  return _while_ (this, test);
-};
-
-Action.prototype._do_while_ = function (test) {
-  return _do_while_ (this, test);
-};
-
-Action.prototype._finally_ = function (action) {
-  return _finally_ (this, action);
-};
-
-Action.prototype._if_ = function (left, right) {
-  return _if_ (this, left, right);
-};
-
-Action.prototype._when_ = function (action) {
-  return _when_ (this, action);
-};
-
-Action.prototype._unless_ = function (action) {
-  return _unless_ (this, action);
 };
 
 Action.ret = ret;
