@@ -665,7 +665,7 @@ macro fork {
   rule {
     { $e ... }
   } => {
-    ( action { $e ... } ) . runVar ();
+    ( action { $e ... } ) . run ();
   }
 }
 

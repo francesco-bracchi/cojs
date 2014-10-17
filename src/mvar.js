@@ -2,7 +2,6 @@
 
 var Queue = require('./linkedListQueue'),
     Trampoline = require('./trampoline'),
-    Action = require('./action'),
     alt = require('./alt');
 
 // set the global variable _cojs
@@ -96,10 +95,3 @@ Mvar.prototype.alt = function (n) {
 module.exports = function (val) {
   return new Mvar(val);
 };
-
-Action.prototype.runVar = function () {
-  var end = new Mvar();
-  this.bind(function (v) { 
-    return end.put(v);
-  }).run();
-}
