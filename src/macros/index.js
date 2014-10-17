@@ -24,13 +24,13 @@ macro _do_while_ {
   rule {
     ( $body:expr , $test:expr)
   } => {
-    function loop () {
+    ( function loop () {
       return ( $body ) . bind ( function () {
         return ( $test ) . bind (function ( t ) {
           return t ? loop () : _cojs . undef ;
         } ) ;
       } );
-    } () 
+    } () )
   }
 }
 
@@ -322,9 +322,14 @@ macro action {
   }
 
   rule {
+    { do $b:expr while ( $t:expr ) }
+  } => {
+    _do_while_ ( action { $b } , action { $t } )
+  }
+  rule {
     { do $b:expr while ( $t:expr ) ; }
   } => {
-    _do_while ( action { $b } , action { $t } )
+    action { do $b while ( $t ) }
   }
   rule {
     { do $b:expr while ( $t:expr ) ; $es ... }
@@ -391,7 +396,7 @@ macro action {
   rule {
     { if ( $t:expr ) { $l ... } }
   } => {
-    if ( action { $t } , action { $l ... } )
+    _if_ ( action { $t } , action { $l ... } )
   }
   rule {
     { if ( $t:expr ) { $l ... } $es ... }
