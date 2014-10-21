@@ -4,7 +4,7 @@
 
 'use strict';
 
-var mvar = require ('../src/mvar');
+var mvar = require ('../lib/mvar');
 
 var now = function () {
   return (new Date()).getTime();

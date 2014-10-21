@@ -1,7 +1,7 @@
 'use strict';
 // does ping/pong between 2 processes 100 times
 
-var mvar = require ('../src/mvar'),
+var mvar = require ('../lib/mvar'),
     max = 100000,
     m0 = mvar(), 
     m1 = mvar();

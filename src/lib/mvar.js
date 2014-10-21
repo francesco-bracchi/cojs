@@ -2,6 +2,7 @@
 
 var Queue = require('./linkedListQueue'),
     Trampoline = require('./trampoline'),
+    Action = require('./action'),
     alt = require('./alt');
 
 // set the global variable _cojs

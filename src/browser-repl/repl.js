@@ -1,3 +1,4 @@
+// -*- mode: js -*-
 'use strict';
 /**
  * This is a simple javascript repl, that transforms the 
@@ -11,7 +12,7 @@
  * strings in a channel of balanced expressions.
  * this last channel is read by the actual REPL loop.
  */
-var mvar = require("../../../src/mvar");
+var mvar = require("../lib/mvar");
 
 // simple utility method that removes the last character
 String.prototype.pop = function () {
@@ -46,7 +47,6 @@ var registerKeypress = function () {
 };
 
 var id = 0;
-
 // appends an new block to the page 
 // blocks are numbered in progressive manner
 var block = function (type) {

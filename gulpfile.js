@@ -3,103 +3,79 @@
 var gulp = require('gulp'),
     gutil = require ('gulp-util'),
     sweetjs = require('gulp-sweetjs'),
-    clean = require('gulp-clean'),
+    del = require('del'),
     frep = require ('gulp-frep'),
     exec = require ('child_process').exec,
     debug = require('gulp-debug'),
-    browserify = require('gulp-browserify');
+    browserify = require('gulp-browserify'),
+    path = require('path'),
+    build = 'build';
 
-var paths = {
-  'src': "src/**/*.js",
-  'macros': "src/macros/*.js",
-  'examples': 'examples/*.js'
-};
+gulp.task('distclean', ['clean'], function(done) {
+  del('node_modules', done);
+});
 
-gulp.task('default', ['dist']);
-
-gulp.task ('clean', function () {
-  return gulp
-    .src (['dist'], {read: false})
-    .pipe (clean());
+gulp.task ('clean', function (done) {
+  del(build, done);
 });
 
 gulp.task('docco', function () {
-  var src = "src/*.js src/**/*.js";
+  var src = "src/*.js src/**/*.js src/*.sjs src/**/*.sjs";
   exec ('node_modules/.bin/docco-husky ' + src);
 });
 
-gulp.task ('sweeten', ['sweeten/src']);
-
-gulp.task ('sweeten/src', function () {
+gulp.task ('expand', function () {
   return gulp
-    .src([paths.src, "!" + paths.macros])
-    .pipe(sweetjs ({modules: ['./src/macros']}))
-    .pipe(gulp.dest('dist/src'));
+    .src(['src/**/*.js'])
+    .pipe(sweetjs ({modules: ['./src/lib/macros']}))
+    .pipe(gulp.dest(build));
 });
 
-gulp.task ('sweeten/examples', function () {
-  return gulp
-    .src(paths.examples)
-    .pipe(sweetjs ({modules: ['./src/macros']}))
-    .pipe(frep([{
-      pattern: "'\.\/src\/core'",
-      replacement: "'..\/src\/core'"
-    }]))
-    .pipe(gulp.dest('dist/examples'));
-});
-
-gulp.task ('sweeten/browser-repl', function () {
+gulp.task('browserify', ['expand'], function () {
   gulp
-    .src ('examples/browser-repl/js/repl.js')
-    .pipe(sweetjs ({modules: ['./src/macros']}))
-    // .pipe(frep([{
-    //   pattern: "'\.\/src\/core'",
-    //   replacement: "'..\/src\/core'"
-    // }]))
-    .pipe (gulp.dest ('dist/examples/browser-repl/js'));
-});
-
-gulp.task ('ring', ['sweeten/src', 'sweeten/examples']);
-gulp.task ('ping', ['sweeten/src', 'sweeten/examples']);
-
-gulp.task ('browserify/browser-repl', [
-  'sweeten/src',
-  'sweeten/browser-repl'
-], function () {
-  gulp
-    .src('dist/examples/browser-repl/js/repl.js')
+    .src(build + '/browser-repl/repl.js')
     .pipe(browserify())
-    .pipe(gulp.dest('dist/examples/browser-repl/js'));
+    .pipe(gulp.dest(build + '/browser-repl'));
+  // .pipe(gulp.dest(build + '/browser-repl.browserify'))
+  // .pipe(minify())
+  // .pipe(gulp.dest(build + '/browser-repl.minified'));
 });
 
-gulp.task ('browser-repl', [
-  'browserify/browser-repl'
-], function () {
+gulp.task('html', function () {
   gulp
-    .src(['examples/browser-repl/*.html', 'examples/browser-repl/**/*.css'])
-    .pipe(gulp.dest('dist/examples/browser-repl'));
+  .src(['src/**/*.html'])
+  .pipe(gulp.dest(build));
 });
 
-gulp.task ('watch', ['sweeten'], function () {
-  gulp.watch(paths.macros, ['sweeten']);
-  gulp.watch(paths.src, ['sweeten/src']);
-  gulp.watch(paths.examples, ['sweeten/examples']);
-});
-
-gulp.task ('macros', function () {
+gulp.task('css', function () {
   gulp
-    .src(paths.macros)
-    .pipe(gulp.dest('dist/src/macros'));
+  .src(['src/**/*.css'])
+  .pipe(gulp.dest(build));
 });
 
-gulp.task ('package',function () {
-  gulp
-    .src(['package.json', 'README.md'])
-    .pipe(gulp.dest('dist/src'));
+gulp.task('browser-repl', ['browserify', 'html', 'css']);
+
+gulp.task('default', ['expand', 'browser-repl']);
+
+var expandFile = function (event) {
+  var dir = path.dirname(event.path),
+      pwd = path.resolve(),
+      rel = path.relative(pwd, dir);
+  return gulp
+    .src(event.path)
+    .pipe(sweetjs ({modules: ['./src/lib/macros']}))
+    .pipe(gulp.dest(rel.replace(/^src/, 'build')));
+};
+
+gulp.task('watch', function () {
+  gulp.watch('src/lib/macros/*.sjs', ['expand']);
+  gulp.watch('src/**/*.js', expandFile);
+  gulp.watch('src/browser-repl/repl.js', ['browserify']);
+  // **todo** use a callback like expandFile
+  gulp.watch('src/**/*.css', ['css']);
+  gulp.watch('src/**/*.html', ['html']);
 });
 
-gulp.task ('dist', ['sweeten', 'macros', 'package']);
-
-gulp.task ('publish', ['dist'], function () {
-  exec ('npm publish dist/src');
-})
+// gulp.task ('publish', ['dist'], function () {
+//   exec ('npm publish dist/src');
+// })
