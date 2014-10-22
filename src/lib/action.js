@@ -54,7 +54,7 @@ var initial_fail = function (e, cont, active) {
 // Actually this queue should be a functional object, but since the execution
 // model makes this unique in any case, is not a problem using an ephemeral queue
 // implementation, like the classical `LinkedListQueue`.
-Action.prototype.run = function (end) {
+Action.prototype.run = function () {
   return this
     .take(initial_continuation, 
           initial_fail, 
@@ -204,7 +204,7 @@ var failU = function (err) {
 };
 
 // finally
-Action.prototype.anyhow = function (body, clause) {
+Action.prototype.anyhow = function (clause) {
   return this.error(function (err) { 
     return clause.then(failU(err));
   }).bind (function (v) {

@@ -1,7 +1,8 @@
 NPM			= npm
 GULP               	= node_modules/.bin/gulp
+DOCCO			= node_modules/.bin/docco-husky
 
-all: gulp
+all: gulp docs
 
 update: 
 	$(NPM) install
@@ -9,16 +10,20 @@ update:
 gulp: update
 	$(GULP)
 
+expand: update
+	$(GULP) expand
+
 clean: update
 	$(GULP) clean
 
 distclean: update
 	$(GULP) distclean
 
-doc: update
-	$(GULP) doc
+docs: update
+	$(DOCCO) src
 
-publish: gulp
+publish: update
+	$(GULP) lib
 	$(NPM) publish build/lib
 
 test: update

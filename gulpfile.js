@@ -1,33 +1,35 @@
 "use strict";
 
 var gulp = require('gulp'),
-    gutil = require ('gulp-util'),
-    sweetjs = require('gulp-sweetjs'),
     del = require('del'),
-    frep = require ('gulp-frep'),
-    exec = require ('child_process').exec,
-    debug = require('gulp-debug'),
+    sweetjs = require('gulp-sweetjs'),
+    istanbul = require('gulp-istanbul'),
+    mocha = require('gulp-mocha'),
     browserify = require('gulp-browserify'),
     path = require('path'),
     build = 'build';
 
 gulp.task('distclean', ['clean'], function(done) {
-  del('node_modules', done);
+  del(['node_modules','**/*~'], done);
 });
 
 gulp.task ('clean', function (done) {
   del(build, done);
 });
 
-gulp.task('docco', function () {
-  var src = "src/*.js src/**/*.js src/*.sjs src/**/*.sjs";
-  exec ('node_modules/.bin/docco-husky ' + src);
+gulp.task('macros', function () {
+  return gulp
+    .src('src/**/*.sjs')
+    .pipe(gulp.dest(build));
 });
 
-gulp.task ('expand', function () {
+gulp.task ('expand', ['macros'], function () {
   return gulp
     .src(['src/**/*.js'])
-    .pipe(sweetjs ({modules: ['./src/lib/macros']}))
+    .pipe(sweetjs ({
+      modules: ['./build/lib/macros'],
+      sourceMap: true
+    }))
     .pipe(gulp.dest(build));
 });
 
@@ -36,9 +38,6 @@ gulp.task('browserify', ['expand'], function () {
     .src(build + '/browser-repl/repl.js')
     .pipe(browserify())
     .pipe(gulp.dest(build + '/browser-repl'));
-  // .pipe(gulp.dest(build + '/browser-repl.browserify'))
-  // .pipe(minify())
-  // .pipe(gulp.dest(build + '/browser-repl.minified'));
 });
 
 gulp.task('html', function () {
@@ -55,7 +54,7 @@ gulp.task('css', function () {
 
 gulp.task('browser-repl', ['browserify', 'html', 'css']);
 
-gulp.task('default', ['expand', 'browser-repl']);
+gulp.task('default', ['lib', 'browser-repl']);
 
 var expandFile = function (event) {
   var dir = path.dirname(event.path),
@@ -63,8 +62,11 @@ var expandFile = function (event) {
       rel = path.relative(pwd, dir);
   return gulp
     .src(event.path)
-    .pipe(sweetjs ({modules: ['./src/lib/macros']}))
-    .pipe(gulp.dest(rel.replace(/^src/, 'build')));
+    .pipe(sweetjs ({
+      modules: ['./src/lib/macros'],
+      sourceMap: true
+    }))
+    .pipe(gulp.dest(rel.replace(/^src/, build)));
 };
 
 gulp.task('watch', function () {
@@ -76,6 +78,25 @@ gulp.task('watch', function () {
   gulp.watch('src/**/*.html', ['html']);
 });
 
-// gulp.task ('publish', ['dist'], function () {
-//   exec ('npm publish dist/src');
-// })
+gulp.task('lib', ['expand'], function () {
+  return gulp
+    .src(['package.json', 'README.md'])
+    .pipe(gulp.dest(build + '/lib'));
+});
+
+gulp.task('test', ['expand'], function () {
+  return gulp.src([build + '/lib/**/*.js'])
+    .pipe(istanbul())
+    .on('finish', function () {
+      gulp
+        .src(build + '/test/test.js', {
+          read: false
+        })
+        .pipe(mocha({
+          reporter: 'nyan'
+        }))
+        .pipe(istanbul.writeReports({
+          dir: build + '/coverage'
+        }));
+    });
+});
