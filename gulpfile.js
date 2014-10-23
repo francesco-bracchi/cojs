@@ -92,9 +92,7 @@ gulp.task('test', ['expand'], function () {
         .src(build + '/test/test.js', {
           read: false
         })
-        .pipe(mocha({
-          reporter: 'nyan'
-        }))
+        .pipe(mocha())
         .pipe(istanbul.writeReports({
           dir: build + '/coverage'
         }));

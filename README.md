@@ -1,5 +1,7 @@
 # Cojs
 
+![travis-ci](https://travis-ci.org/francesco-bracchi/cojs.svg?branch=master)
+
 This Library is heavily inspired by 
 
 [clojure.core.async](http://clojure.com/blog/2013/06/28/clojure-core-async-channels.html).
