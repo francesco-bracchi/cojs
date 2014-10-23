@@ -1,6 +1,6 @@
 # Cojs
 
-![travis-ci](https://travis-ci.org/francesco-bracchi/cojs.svg?branch=master)
+[![Build Status](https://travis-ci.org/francesco-bracchi/cojs.svg?branch=master)](https://travis-ci.org/francesco-bracchi/cojs)
 
 This Library is heavily inspired by 
 
